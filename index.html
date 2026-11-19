@@ -190,7 +190,13 @@ function toMs(s) {
 let tick = null;
 async function stopAll() {
   clearInterval(tick); $('timer').style.display = 'none';
-  try { await api('/me/player/pause' + dev()); } catch (e) {}
+  // Pause, then check it really stopped; try again up to 3 times.
+  for (let i = 0; i < 3; i++) {
+    try { await api('/me/player/pause' + dev(), { method: 'PUT' }); } catch (e) {}
+    await new Promise(r => setTimeout(r, 600));
+    try { const st = await api('/me/player'); if (!st || !st.is_playing) { msg('m4', 'Stopped after 15 seconds. Everything works!', 'ok'); return; } } catch (e) {}
+  }
+  msg('m4', 'The song didn’t stop by itself. Send Claude a screenshot of this message.', 'err');
 }
 function dev() { const d = store.get('sp_device'); return d ? '?device_id=' + encodeURIComponent(d) : ''; }
 
