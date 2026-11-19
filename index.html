@@ -256,6 +256,28 @@ const SND = {
   end() { [0, .3, .6].forEach(t => tone(880, t, .22, 'square', .35)); tone(440, .9, .7, 'sawtooth', .35); },
   tick() { tone(1200, 0, .05, 'square', .12); }
 };
+const PRESETS = {
+  buzzer: {name: 'Classic buzzer', play() { tone(160, 0, .75, 'sawtooth', .5); tone(240, 0, .75, 'square', .25); }},
+  horn: {name: 'Air horn', play() { [0, .35].forEach(t => { tone(420, t, .3, 'sawtooth', .45); tone(530, t, .3, 'sawtooth', .3); }); tone(420, .7, .8, 'sawtooth', .45); tone(530, .7, .8, 'sawtooth', .3); }},
+  ding: {name: 'Ding ding', play() { tone(1320, 0, .5, 'sine', .5); tone(1320, .25, .7, 'sine', .5); tone(2640, 0, .3, 'sine', .15); }},
+  boing: {name: 'Boing', play() { const a = ac(), o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(140, a.currentTime); o.frequency.exponentialRampToValueAtTime(900, a.currentTime + .25); o.frequency.exponentialRampToValueAtTime(220, a.currentTime + .6); g.gain.setValueAtTime(.6, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .8); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + .85); }},
+  siren: {name: 'Siren', play() { const a = ac(), o = a.createOscillator(), g = a.createGain(); o.type = 'square'; for (let i = 0; i < 4; i++) { o.frequency.setValueAtTime(600, a.currentTime + i * .3); o.frequency.linearRampToValueAtTime(1000, a.currentTime + i * .3 + .15); } g.gain.setValueAtTime(.25, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + 1.25); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + 1.3); }},
+  fanfare: {name: 'Fanfare', play() { [[523, 0], [659, .14], [784, .28], [1047, .42]].forEach(([f, t]) => tone(f, t, t > .4 ? .7 : .16, 'square', .3)); }}
+};
+/* custom recordings live in IndexedDB (they are too big for normal storage) */
+const DB = {
+  open() { return this.p || (this.p = new Promise((res, rej) => { const r = indexedDB.open('pubquiz', 1); r.onupgradeneeded = () => r.result.createObjectStore('sounds'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
+  async put(k, v) { const d = await this.open(); return new Promise((res, rej) => { const t = d.transaction('sounds', 'readwrite'); t.objectStore('sounds').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); },
+  async get(k) { const d = await this.open(); return new Promise(res => { const r = d.transaction('sounds').objectStore('sounds').get(k); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); },
+  async del(k) { const d = await this.open(); return new Promise(res => { const t = d.transaction('sounds', 'readwrite'); t.objectStore('sounds').delete(k); t.oncomplete = res; }); }
+};
+const CUSTOM = {};  // team index -> object URL
+async function loadCustom() { for (let i = 0; i < TEAMS.length; i++) { try { const b = await DB.get('team' + i); if (b) CUSTOM[i] = URL.createObjectURL(b); } catch (e) {} } }
+function teamSound(i) {
+  const t = TEAMS[i];
+  if (t.sound === 'custom' && CUSTOM[i]) { const a = new Audio(CUSTOM[i]); a.volume = 1; a.play().catch(() => PRESETS.buzzer.play()); return; }
+  (PRESETS[t.sound] || PRESETS.buzzer).play();
+}
 
 /* ---------- Spotify ---------- */
 const CLIENT_ID = '993e789b7b784ef6893e6dcac2892cd6';
@@ -361,7 +383,7 @@ const B = {order: [], armed: false, cd: null,
     if (!this.armed || this.order.includes(t)) return;
     this.order.push(t);
     if (this.order.length === 1) {
-      SND.buzz(); if (SP.playing) SP.pause();
+      teamSound(t); if (SP.playing) SP.pause();
       const team = TEAMS[t]; $('buzz').style.background = team.color; $('buzz').style.color = (team.name === 'Yellow' || team.name === 'Light blue') ? C.dk : C.chalk;
       $('bwho').textContent = 'Team ' + team.name + '!'; $('bnext').textContent = ''; $('bcd').textContent = ''; $('buzz').style.display = 'flex';
       const bt = cfg(SLIDES[idx]).buzzTime;
@@ -425,13 +447,19 @@ async function drawEdit() {
   h += `<h3>Spotify</h3>`;
   if (SP.connected()) {
     let devs = []; try { devs = await SP.devices(); } catch (e) {}
+    if (devs.length && !devs.some(d => d.id === SP.device)) { const c = devs.find(d => d.type === 'Computer') || devs[0]; SP.device = c.id; S.set('device', c.id); }
     h += `<span style="color:#A6E35A">✓ Connected</span> &nbsp; Play music on: <select id="devSel">${devs.map(d => `<option value="${d.id}" ${d.id === SP.device ? 'selected' : ''}>${esc(d.name)} (${d.type})</option>`).join('') || '<option>Open Spotify on the MacBook, then reopen edit mode</option>'}</select>
       &nbsp; Music volume <input id="vol" type="number" min="5" max="100" value="${SP.volume}" style="width:70px">%
       &nbsp;<button class="ghost" onclick="SP.toggle()">Test play/pause</button>
       <div style="margin-top:8px"><button class="g" onclick="autoFill()">Auto-fill Game 2 and Game 7 songs</button> <span class="muted">Finds the quiz songs on Spotify for every empty song slot.</span></div>`;
   } else h += `<button class="g" onclick="SP.login()">Connect Spotify</button> <span class="muted">Log in with your Premium account. You only do this once.</span>`;
-  h += `<h3>Teams and buzzer keys</h3><div>${TEAMS.map((t, i) => `<span class="team"><span class="dot" style="background:${t.color}"></span>${esc(t.name)}: <b>${B.learn === i ? 'press the buzzer now…' : 'key "' + esc(t.key) + '"'}</b> <button class="ghost" onclick="B.learn=${i};drawEdit()">Change</button></span>`).join('')}</div>
-    <div class="muted">To link a CompuPhase button: click Change next to the team, then press that team’s button.</div>`;
+  h += `<h3>Teams, buzzer keys and sounds</h3><table style="width:auto">${TEAMS.map((t, i) => `<tr><td><span class="team" style="margin:0"><span class="dot" style="background:${t.color}"></span><b>${esc(t.name)}</b></span></td>
+    <td>${B.learn === i ? '<b style="color:#FFC93C">Press the buzzer now…</b>' : 'Key "' + esc(t.key) + '"'} <button class="ghost" onclick="B.learn=${i};drawEdit()">Change</button></td>
+    <td>Sound: <select onchange="TEAMS[${i}].sound=this.value;S.set('teams',TEAMS);drawEdit()">${Object.entries(PRESETS).map(([k, p]) => `<option value="${k}" ${(t.sound || 'buzzer') === k ? 'selected' : ''}>${p.name}</option>`).join('')}<option value="custom" ${t.sound === 'custom' ? 'selected' : ''}>${CUSTOM[i] ? 'My recording' : 'My recording (none yet)'}</option></select></td>
+    <td><button class="${REC.team === i ? '' : 'ghost'}" onclick="toggleRec(${i})">${REC.team === i ? '■ Stop recording' : '● Record'}</button>
+      <label class="ghost" style="cursor:pointer;border:1px solid #B9C7BC;border-radius:8px;padding:7px 12px;font-family:'Lilita One'">Upload file<input type="file" accept="audio/*" style="display:none" onchange="uploadSound(${i},this.files[0])"></label>
+      <button class="ghost" onclick="ac();teamSound(${i})">▶ Test</button></td></tr>`).join('')}</table>
+    <div class="muted">To link a CompuPhase button: click Change next to the team, then press that team’s button. To record: click Record, say your line (max 5 seconds), click Stop. The first time, Chrome asks to use the microphone: click Allow.</div>`;
   h += `<h3>Keys during the quiz</h3><div class="keys muted"><span>→ / ← next / back</span><span>Space reset buzzers</span><span>P pause / play music</span><span>T start timer</span><span>B buzzers on/off</span><span>F full screen</span><span>H host info line</span><span>E edit mode</span></div>`;
   h += `<h3>Slides</h3><table><tr><th>#</th><th>Slide</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Timer (s)</th><th>Timer starts</th><th>Buzzers</th></tr>`;
   let sec = '';
@@ -461,6 +489,31 @@ async function findSong(id, q) {
   try { const items = await SP.search(q); $('res-' + id).innerHTML = items.map(t => `<div onclick="pick('${id}','${t.uri}',this.textContent)">${esc(t.name)} – ${esc(t.artists.map(a => a.name).join(', '))}</div>`).join('') || '<span class="muted">Nothing found</span>'; }
   catch (e) { toast('Search failed: ' + e.message); }
 }
+const REC = {team: undefined, rec: null, timer: null};
+async function toggleRec(i) {
+  if (REC.team === i) return REC.rec && REC.rec.stop();
+  if (REC.team !== undefined) return toast('Stop the other recording first');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    const chunks = [], rec = new MediaRecorder(stream);
+    REC.team = i; REC.rec = rec;
+    rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    rec.onstop = async () => {
+      clearTimeout(REC.timer); stream.getTracks().forEach(t => t.stop());
+      await saveSound(i, new Blob(chunks, {type: rec.mimeType || 'audio/webm'}));
+      REC.team = undefined; REC.rec = null; drawEdit(); ac(); teamSound(i);
+    };
+    rec.start(); REC.timer = setTimeout(() => rec.state === 'recording' && rec.stop(), 5000);
+    drawEdit();
+  } catch (e) { REC.team = undefined; toast('No microphone access. In Chrome, click the lock icon next to the address and allow the microphone.', 6000); }
+}
+async function saveSound(i, blob) {
+  if (!blob || blob.size < 500) return toast('That recording was empty, try again');
+  if (blob.size > 3e6) return toast('That file is too big. Keep it under 3 MB (a few seconds).');
+  await DB.put('team' + i, blob); if (CUSTOM[i]) URL.revokeObjectURL(CUSTOM[i]); CUSTOM[i] = URL.createObjectURL(blob);
+  TEAMS[i].sound = 'custom'; S.set('teams', TEAMS); toast(TEAMS[i].name + ' now has its own sound');
+}
+function uploadSound(i, f) { if (f) saveSound(i, f).then(drawEdit); }
 function pick(id, uri, name) { setCfg(id, {song: uri, songName: name}); drawEdit(); }
 function clearSong(id) { setCfg(id, {song: '', songName: ''}); drawEdit(); }
 async function autoFill() {
@@ -477,6 +530,7 @@ function importCfg(f) { if (!f) return; f.text().then(t => { const j = JSON.pars
   const back = await SP.handleReturn();
   idx = Math.min(S.get(back ? 'returnTo' : 'idx', 0), SLIDES.length - 1);
   DATA.flags.forEach(f => { const im = new Image(); im.src = 'https://flagcdn.com/w640/' + f[0] + '.png'; });
+  loadCustom();
   render(); B.armed = cfg(SLIDES[idx]).buzz; status();
   if (back) openEdit();
   ['Lilita One', 'Nunito'].forEach(f => document.fonts && document.fonts.load('20px "' + f + '"').then(render));
