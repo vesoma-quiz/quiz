@@ -201,6 +201,13 @@ $('play').onclick = async () => {
   if (pos === null) { msg('m4', 'Write the start time like 0:45.', 'err'); return; }
   try {
     await api('/me/player/play' + dev(), { method: 'PUT', body: JSON.stringify({ uris: [uri], position_ms: pos }) });
+    // The Spotify desktop app sometimes ignores the start position, so jump there explicitly.
+    if (pos > 0) {
+      const seek = () => api('/me/player/seek?position_ms=' + pos + (store.get('sp_device') ? '&device_id=' + encodeURIComponent(store.get('sp_device')) : ''), { method: 'PUT' }).catch(() => {});
+      await new Promise(r => setTimeout(r, 700)); await seek();
+      await new Promise(r => setTimeout(r, 800));
+      try { const st = await api('/me/player'); if (st && st.progress_ms < pos - 1500) await seek(); } catch (e) {}
+    }
     msg('m4', 'Playing! Did it start at ' + $('start').value + '? Then everything works.', 'ok'); done('s4');
     let s = 15; $('timer').textContent = s; $('timer').style.display = 'block';
     clearInterval(tick);
