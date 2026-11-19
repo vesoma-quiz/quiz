@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz Spotify Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --board:#1F3D33; --board-dk:#17302A; --wood:#7A4A26; --chalk:#F6F2E6; --dust:#B9C7BC;
+          --gold:#FFC93C; --coral:#FF6B6B; --lime:#A6E35A; --teal:#3DD6C8; --sp:#1ED760; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--wood); font-family:Nunito, system-ui, sans-serif; color:var(--chalk); }
+  .board { max-width:820px; margin:16px auto; background:var(--board); border-radius:10px; padding:28px 28px 36px; }
+  h1 { font-family:'Lilita One', sans-serif; font-weight:400; font-size:38px; margin:0 0 4px; }
+  .kicker { font-family:'Lilita One', sans-serif; color:var(--gold); letter-spacing:1px; font-size:15px; }
+  .sub { color:var(--dust); margin:0 0 24px; }
+  .step { background:var(--board-dk); border:2px dashed #2f5a4b; border-radius:10px; padding:18px 20px; margin:14px 0; }
+  .step.done { border-color:var(--lime); border-style:solid; }
+  .step h2 { font-family:'Lilita One', sans-serif; font-weight:400; font-size:22px; margin:0 0 8px; display:flex; align-items:center; gap:10px; }
+  .num { display:inline-flex; width:30px; height:30px; border-radius:50%; background:var(--gold); color:var(--board-dk); align-items:center; justify-content:center; font-size:16px; }
+  .step.done .num { background:var(--lime); }
+  p { margin:6px 0; line-height:1.5; }
+  input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3c6b5b; background:#0f241e; color:var(--chalk); font-size:15px; font-family:inherit; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .row input { flex:1; min-width:200px; }
+  button { font-family:'Lilita One', sans-serif; font-size:17px; padding:10px 18px; border-radius:8px; border:0; cursor:pointer; background:var(--gold); color:var(--board-dk); }
+  button.sp { background:var(--sp); }
+  button.ghost { background:transparent; color:var(--chalk); border:1px solid var(--dust); }
+  code.copy { display:block; background:#0f241e; padding:10px 12px; border-radius:8px; word-break:break-all; color:var(--teal); font-size:15px; }
+  .msg { margin-top:10px; padding:10px 12px; border-radius:8px; display:none; }
+  .msg.ok { display:block; background:rgba(166,227,90,.15); color:var(--lime); }
+  .msg.err { display:block; background:rgba(255,107,107,.15); color:var(--coral); }
+  .msg.info { display:block; background:rgba(61,214,200,.12); color:var(--teal); }
+  select { padding:10px; border-radius:8px; background:#0f241e; color:var(--chalk); border:1px solid #3c6b5b; font-size:15px; }
+  .timer { font-family:'Lilita One', sans-serif; font-size:64px; text-align:center; color:var(--gold); margin-top:12px; display:none; }
+  small { color:var(--dust); }
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="kicker">PUB QUIZ NIGHT · TECH CHECK</div>
+  <h1>Spotify test</h1>
+  <p class="sub">Go through the steps from top to bottom. When step 4 plays your song from the right second, the quiz app will work.</p>
+
+  <div class="step" id="s1">
+    <h2><span class="num">1</span> Copy this address into Spotify</h2>
+    <p>In your Spotify developer app, paste this under <b>Redirect URIs</b> and save:</p>
+    <code class="copy" id="redirect"></code>
+    <div class="row"><button class="ghost" id="copyBtn">Copy address</button></div>
+  </div>
+
+  <div class="step" id="s2">
+    <h2><span class="num">2</span> Paste your Client ID</h2>
+    <p>You find it on your Spotify developer app's page, under <b>Settings</b>.</p>
+    <div class="row"><input id="clientId" placeholder="Client ID (32 letters and numbers)"><button id="saveId">Save</button></div>
+    <div class="msg" id="m2"></div>
+  </div>
+
+  <div class="step" id="s3">
+    <h2><span class="num">3</span> Connect your Spotify account</h2>
+    <p>Spotify will ask you to log in and agree. Afterwards you come straight back here.</p>
+    <div class="row"><button class="sp" id="connect">Connect Spotify</button></div>
+    <div class="msg" id="m3"></div>
+  </div>
+
+  <div class="step" id="s4">
+    <h2><span class="num">4</span> Play a test song</h2>
+    <p>First open the <b>Spotify app on your MacBook</b> and play any song for a second, then pause it. That wakes the Mac up as a speaker.</p>
+    <div class="row"><button class="ghost" id="findDev">Find my MacBook</button><select id="devices" style="display:none"></select></div>
+    <p style="margin-top:14px">Paste a song link (in Spotify: Share → Copy song link) and pick where it should start:</p>
+    <div class="row">
+      <input id="track" placeholder="https://open.spotify.com/track/…">
+      <input id="start" style="max-width:110px;min-width:90px" value="0:45" title="Start at (m:ss)">
+    </div>
+    <div class="row"><button class="sp" id="play">Play test song (15 s)</button><button class="ghost" id="stop">Stop</button></div>
+    <div class="timer" id="timer">15</div>
+    <div class="msg" id="m4"></div>
+    <p style="margin-top:12px"><small>The song should start at the second you chose and stop by itself after 15 seconds, just like a timer slide in the quiz.</small></p>
+  </div>
+</div>
+
+<script>
+const SCOPES = 'user-read-playback-state user-modify-playback-state';
+const REDIRECT = (location.origin + location.pathname).replace(/index\.html$/, '');
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function msg(id, text, kind) { const m = $(id); m.className = 'msg ' + kind; m.textContent = text; }
+function done(id) { $(id).classList.add('done'); }
+
+$('redirect').textContent = REDIRECT;
+if (location.protocol !== 'https:' || !location.hostname.endsWith('github.io')) {
+  $('redirect').textContent = 'Not ready yet: open this page from your github.io address (Part A, step 4). The address to copy will then appear here, starting with https://';
+  $('redirect').style.color = '#FF6B6B';
+  $('copyBtn').style.display = 'none';
+}
+$('copyBtn').onclick = async () => {
+  try { await navigator.clipboard.writeText(REDIRECT); $('copyBtn').textContent = 'Copied!'; done('s1'); }
+  catch (e) { $('copyBtn').textContent = 'Select the address and copy it'; }
+};
+
+if (!store.get('sp_client_id')) store.set('sp_client_id', '993e789b7b784ef6893e6dcac2892cd6');
+const savedId = store.get('sp_client_id');
+if (savedId) { $('clientId').value = savedId; done('s2'); done('s1'); }
+$('saveId').onclick = () => {
+  const v = $('clientId').value.trim();
+  if (!/^[0-9a-f]{32}$/i.test(v)) { msg('m2', 'That doesn’t look like a Client ID. It should be 32 letters and numbers.', 'err'); return; }
+  store.set('sp_client_id', v); msg('m2', 'Saved.', 'ok'); done('s2');
+};
+
+function b64url(bytes) { return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+async function challenge(verifier) { return b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))); }
+
+$('connect').onclick = async () => {
+  const cid = store.get('sp_client_id');
+  if (!cid) { msg('m3', 'Paste and save your Client ID in step 2 first.', 'err'); return; }
+  const arr = crypto.getRandomValues(new Uint8Array(48));
+  const verifier = b64url(arr);
+  store.set('sp_verifier', verifier);
+  const p = new URLSearchParams({ response_type: 'code', client_id: cid, scope: SCOPES,
+    code_challenge_method: 'S256', code_challenge: await challenge(verifier), redirect_uri: REDIRECT });
+  location.href = 'https://accounts.spotify.com/authorize?' + p.toString();
+};
+
+async function handleReturn() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('error')) { msg('m3', 'Spotify said: ' + q.get('error') + '. Try Connect again.', 'err'); return; }
+  const code = q.get('code');
+  if (!code) { if (token()) { msg('m3', 'Spotify is connected.', 'ok'); done('s3'); } return; }
+  history.replaceState({}, '', REDIRECT);
+  const body = new URLSearchParams({ client_id: store.get('sp_client_id'), grant_type: 'authorization_code',
+    code, redirect_uri: REDIRECT, code_verifier: store.get('sp_verifier') || '' });
+  try {
+    const r = await fetch('https://accounts.spotify.com/api/token', { method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+    const j = await r.json();
+    if (!r.ok) { msg('m3', 'Login failed: ' + (j.error_description || j.error) + '. Check the redirect address in step 1 matches exactly.', 'err'); return; }
+    store.set('sp_token', j.access_token);
+    store.set('sp_expires', String(Date.now() + j.expires_in * 1000));
+    msg('m3', 'Spotify is connected.', 'ok'); done('s1'); done('s2'); done('s3');
+  } catch (e) { msg('m3', 'Couldn’t reach Spotify. Check the internet connection and try again.', 'err'); }
+}
+function token() {
+  const t = store.get('sp_token'), exp = Number(store.get('sp_expires') || 0);
+  return t && Date.now() < exp - 30000 ? t : null;
+}
+
+async function api(path, opts = {}) {
+  const t = token();
+  if (!t) throw { friendly: 'Spotify isn’t connected yet (or the login expired). Click Connect Spotify in step 3.' };
+  const r = await fetch('https://api.spotify.com/v1' + path, { ...opts,
+    headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' } });
+  if (r.status === 204) return null;
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (!r.ok) {
+    const reason = j && j.error && (j.error.reason || j.error.message) || r.status;
+    if (r.status === 403 && String(reason).includes('PREMIUM')) throw { friendly: 'Spotify says this needs Premium. Make sure you logged in with your Premium account.' };
+    if (r.status === 403) throw { friendly: 'Spotify refused (403). In your developer app, open User Management and add your own Spotify email, then connect again.' };
+    if (r.status === 404) throw { friendly: 'No active speaker found. Open the Spotify app on your MacBook, play and pause any song, then click Find my MacBook.' };
+    throw { friendly: 'Spotify error: ' + reason };
+  }
+  return j;
+}
+
+$('findDev').onclick = async () => {
+  try {
+    const j = await api('/me/player/devices');
+    const sel = $('devices'); sel.innerHTML = '';
+    (j.devices || []).forEach(d => { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name + ' (' + d.type + ')'; if (d.type === 'Computer') o.selected = true; sel.appendChild(o); });
+    if (!sel.options.length) { msg('m4', 'No speakers found. Open the Spotify app on your MacBook, play and pause a song, then try again.', 'err'); sel.style.display = 'none'; return; }
+    sel.style.display = ''; store.set('sp_device', sel.value);
+    sel.onchange = () => store.set('sp_device', sel.value);
+    msg('m4', 'Found it. Now paste a song link and press Play.', 'ok');
+  } catch (e) { msg('m4', e.friendly || 'Something went wrong.', 'err'); }
+};
+
+function trackUri(s) {
+  const m = s.match(/track[/:]([A-Za-z0-9]{22})/);
+  return m ? 'spotify:track:' + m[1] : null;
+}
+function toMs(s) {
+  const m = s.trim().match(/^(\d+):(\d{1,2})$/);
+  if (m) return (Number(m[1]) * 60 + Number(m[2])) * 1000;
+  const n = Number(s); return isNaN(n) ? null : n * 1000;
+}
+
+let tick = null;
+async function stopAll() {
+  clearInterval(tick); $('timer').style.display = 'none';
+  try { await api('/me/player/pause' + dev()); } catch (e) {}
+}
+function dev() { const d = store.get('sp_device'); return d ? '?device_id=' + encodeURIComponent(d) : ''; }
+
+$('play').onclick = async () => {
+  const uri = trackUri($('track').value);
+  if (!uri) { msg('m4', 'Paste a Spotify song link first (Share → Copy song link).', 'err'); return; }
+  const pos = toMs($('start').value);
+  if (pos === null) { msg('m4', 'Write the start time like 0:45.', 'err'); return; }
+  try {
+    await api('/me/player/play' + dev(), { method: 'PUT', body: JSON.stringify({ uris: [uri], position_ms: pos }) });
+    msg('m4', 'Playing! Did it start at ' + $('start').value + '? Then everything works.', 'ok'); done('s4');
+    let s = 15; $('timer').textContent = s; $('timer').style.display = 'block';
+    clearInterval(tick);
+    tick = setInterval(() => { s--; $('timer').textContent = s; if (s <= 0) stopAll(); }, 1000);
+  } catch (e) { msg('m4', e.friendly || 'Something went wrong.', 'err'); }
+};
+$('stop').onclick = stopAll;
+
+handleReturn();
+</script>
+</body>
+</html>
