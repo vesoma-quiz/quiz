@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pub Quiz Night</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--board:#1F3D33;--board-dk:#17302A;--wood:#7A4A26;--wood-dk:#5A3418;--chalk:#F6F2E6;--dust:#B9C7BC;
+--gold:#FFC93C;--coral:#FF6B6B;--teal:#3DD6C8;--pink:#FF7EB9;--lime:#A6E35A;--purple:#B18CFF;--orange:#FF9A3C;--lblue:#5CC8F0}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#2a1a0e;overflow:hidden;font-family:Nunito,system-ui,sans-serif;color:var(--chalk)}
+body.hidecursor{cursor:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;width:min(100vw,177.78vh);height:min(56.25vw,100vh);container-type:size;background:var(--wood);overflow:hidden}
+.board{position:absolute;inset:1.6cqw;background:var(--board);border:.25cqw solid var(--wood-dk);overflow:hidden}
+.h{font-family:'Lilita One',sans-serif;font-weight:400}
+.abs{position:absolute}
+.center{text-align:center}
+.kicker{font-family:'Lilita One';letter-spacing:.06em}
+.hdr{position:absolute;left:3.6cqw;top:2.2cqw;font-family:'Lilita One';font-size:1.45cqw;letter-spacing:.05em}
+.hdr:after{content:'';display:block;width:16cqw;height:.35cqw;background:currentColor;margin-top:.5cqw}
+.count{position:absolute;right:3.4cqw;top:2.2cqw;font-family:'Lilita One';font-size:1.45cqw;color:var(--dust)}
+.badge{position:absolute;left:4cqw;top:8.4cqw;width:11.6cqw;height:11.6cqw;display:flex;align-items:center;justify-content:center;
+ font-family:'Lilita One';font-size:5cqw;color:var(--board-dk);
+ clip-path:polygon(50% 0%,59% 16%,75% 7%,75% 25%,93% 25%,84% 41%,100% 50%,84% 59%,93% 75%,75% 75%,75% 93%,59% 84%,50% 100%,41% 84%,25% 93%,25% 75%,7% 75%,16% 59%,0% 50%,16% 41%,7% 25%,25% 25%,25% 7%,41% 16%)}
+.qtext{position:absolute;left:18.5cqw;right:6cqw;top:8cqw;bottom:6cqw;display:flex;align-items:center;font-family:'Lilita One';font-size:4.6cqw;line-height:1.18}
+.has-timer .qtext{right:24cqw}
+.has-timer .grid{right:23cqw}
+.card{position:absolute;left:18.5cqw;right:6cqw;top:27cqw;height:20cqw;background:var(--board-dk);border:.3cqw dashed;border-radius:2cqw;padding:2.4cqw 3.4cqw}
+.card .lab{font-family:'Lilita One';font-size:1.6cqw}
+.card .ans{font-family:'Lilita One';font-size:4.6cqw;margin-top:1cqw;line-height:1.1}
+.smallq{position:absolute;left:18.5cqw;right:6cqw;top:9cqw;height:15cqw;display:flex;align-items:center;font-size:2.3cqw;color:var(--dust)}
+.big{font-family:'Lilita One';font-size:7.5cqw;line-height:1.05}
+.sub{font-size:2.3cqw;color:var(--dust);margin-top:2cqw;white-space:pre-line}
+.mid{position:absolute;left:6cqw;right:6cqw;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.rules{position:absolute;left:5cqw;right:5cqw;top:9cqw}
+.rules h2{font-family:'Lilita One';font-weight:400;font-size:4.6cqw;margin:0 0 2.6cqw}
+.rules li{list-style:none;font-size:2.35cqw;margin:0 0 1.6cqw;display:flex;gap:1.6cqw;align-items:center}
+.rules ul{padding:0;margin:0}
+.star{width:2.6cqw;height:2.6cqw;flex:none;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.flagwrap{position:absolute;background:var(--chalk);padding:.9cqw;transform:rotate(-1.5deg)}
+.flagwrap img{display:block;height:100%;width:auto}
+.grid{position:absolute;left:5cqw;right:5cqw;top:7.5cqw;bottom:2.5cqw;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1cqw}
+.cell{background:var(--board-dk);border:.3cqw solid;border-radius:1.4cqw;padding:1.2cqw 1.6cqw;display:flex;flex-direction:column;justify-content:space-between}
+.cell .cat{font-family:'Lilita One';font-size:1.75cqw}
+.cell .ex{font-size:1.8cqw;color:var(--chalk)}
+.cell .line{height:.25cqw;background:var(--dust);opacity:.6}
+.pill{position:absolute;border-radius:50%}
+.order{position:absolute;left:5cqw;right:5cqw;top:9cqw;display:grid;grid-template-columns:1fr 1fr;gap:1.4cqw 2.4cqw}
+.order div{border:.25cqw solid;border-radius:1.2cqw;background:var(--board-dk);padding:1cqw 2cqw}
+.order b{display:block;font-family:'Lilita One';font-weight:400;font-size:1.3cqw}
+.order span{font-size:2.1cqw;font-weight:700}
+.conf{position:absolute;pointer-events:none}
+/* timer */
+#timer{position:absolute;right:4.5cqw;bottom:5cqw;width:17cqw;height:17cqw;display:none}
+#timer.big{right:auto;left:50%;transform:translateX(-50%);bottom:4cqw}
+#timer svg{width:100%;height:100%}
+#timer .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Lilita One';font-size:6cqw}
+#timesup{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-family:'Lilita One';font-size:11cqw;color:var(--coral);background:rgba(23,48,42,.82);z-index:20}
+/* buzzer */
+#buzz{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-align:center}
+#buzz .who{font-family:'Lilita One';font-size:12cqw;line-height:1;text-shadow:0 .4cqw 0 rgba(0,0,0,.25)}
+#buzz .first{font-family:'Lilita One';font-size:2.4cqw;letter-spacing:.1em;opacity:.85}
+#buzz .next{font-size:2.4cqw;margin-top:2cqw;font-weight:700}
+#buzz .cd{font-family:'Lilita One';font-size:6cqw;margin-top:1.4cqw}
+/* host status */
+#status{position:absolute;left:2cqw;bottom:.35cqw;font-size:1cqw;color:#e9d6c2;opacity:.85;z-index:40;white-space:nowrap}
+#status.off{display:none}
+/* edit panel */
+#edit{position:fixed;inset:0;background:#12261f;color:var(--chalk);z-index:100;display:none;overflow:auto;font-size:14px;cursor:auto}
+#edit .in{max-width:1200px;margin:0 auto;padding:20px 24px 80px}
+#edit h1{font-family:'Lilita One';font-weight:400;font-size:30px;margin:0 0 4px}
+#edit h3{font-family:'Lilita One';font-weight:400;font-size:20px;margin:26px 0 8px;color:var(--gold)}
+#edit .muted{color:var(--dust)}
+#edit button{font-family:'Lilita One';font-size:15px;padding:8px 14px;border-radius:8px;border:0;cursor:pointer;background:var(--gold);color:var(--board-dk);margin:2px 4px 2px 0}
+#edit button.g{background:#1ED760}
+#edit button.ghost{background:transparent;color:var(--chalk);border:1px solid var(--dust)}
+#edit input,#edit select{background:#0b1c16;border:1px solid #3c6b5b;color:var(--chalk);border-radius:6px;padding:6px 8px;font-family:inherit;font-size:14px}
+#edit table{width:100%;border-collapse:collapse}
+#edit td,#edit th{border-bottom:1px solid #24453a;padding:6px 6px;vertical-align:top;text-align:left}
+#edit th{font-size:12px;color:var(--dust);font-weight:400;position:sticky;top:0;background:#12261f}
+#edit tr.sec td{background:#1a3a30;font-family:'Lilita One';font-size:16px;color:var(--gold)}
+#edit .song{font-weight:700}
+#edit .res div{padding:4px 6px;border-radius:6px;cursor:pointer}
+#edit .res div:hover{background:#24453a}
+#edit .close{position:sticky;top:0;float:right;z-index:3}
+#edit .keys span{display:inline-block;margin-right:14px}
+#edit .team{display:inline-flex;align-items:center;gap:8px;margin:4px 16px 4px 0}
+#edit .dot{width:18px;height:18px;border-radius:50%;display:inline-block;border:2px solid #000}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0b1c16;border:1px solid var(--dust);color:var(--chalk);padding:10px 16px;border-radius:10px;z-index:200;display:none;font-size:15px}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <div class="board" id="board"></div>
+  <div id="timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#17302A" stroke-width="10"/><circle id="ring" cx="50" cy="50" r="42" fill="none" stroke="#FFC93C" stroke-width="10" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="263.9" stroke-dashoffset="0"/></svg><div class="num" id="tnum">60</div></div>
+  <div id="timesup">TIME'S UP!</div>
+  <div id="buzz"><div class="first">FIRST TO BUZZ</div><div class="who" id="bwho"></div><div class="cd" id="bcd"></div><div class="next" id="bnext"></div></div>
+  <div id="status"></div>
+</div></div>
+<div id="edit"><div class="in" id="editIn"></div></div>
+<div id="toast"></div>
+
+<script>
+const DATA = {"r1": [["In which year did the Titanic sink?", "1912"], ["Which country won the 2026 FIFA World Cup?", "Spain (beat Argentina 1–0 in the final)"], ["Which country won the Eurovision Song Contest 2026 in Vienna?", "Bulgaria (DARA, “Bangaranga”)"], ["In April 2026, NASA’s Artemis II mission flew four astronauts around what?", "The Moon"], ["Which Italian city co-hosted the 2026 Winter Olympics with Cortina d’Ampezzo?", "Milan"], ["Who painted the Mona Lisa?", "Leonardo da Vinci"], ["Which pop star’s record-breaking world tour was called “The Eras Tour”?", "Taylor Swift"], ["Who was the first woman to win a Nobel Prize?", "Marie Curie (Physics, 1903)"], ["What is the currency of Japan?", "The yen"], ["How many years did the Hundred Years’ War last?", "116 years (1337–1453)"]], "songs": [["Dancing Queen", "ABBA"], ["Livin’ on a Prayer", "Bon Jovi"], ["Wannabe", "Spice Girls"], ["Sweet Caroline", "Neil Diamond"], ["Mr. Brightside", "The Killers"], ["I Want It That Way", "Backstreet Boys"], ["Wonderwall", "Oasis"], ["Africa", "Toto"], ["Bohemian Rhapsody", "Queen"], ["Shake It Off", "Taylor Swift"]], "letterCats": ["Name", "Athlete", "Country", "City", "Something in the kitchen", "Brand / company", "Animal", "Something you WANT in your mouth", "Something you DON’T want in your mouth"], "letters": {"K": ["Kevin, Karen, Kate", "Kylian Mbappé, Kobe Bryant", "Kenya, Kazakhstan, Kuwait", "Kyiv, Kyoto, Kiel", "Kettle, Knife", "Kellogg’s, KFC, Kia", "Kangaroo, Koala", "Kebab, Kiwi, KitKat", "Kerosene, Keys, Kitty litter"], "M": ["Maria, Max, Mohammed", "Lionel Messi, Michael Jordan", "Mexico, Morocco, Malta", "Munich, Madrid, Moscow", "Microwave, Mixer, Mug", "McDonald’s, Mercedes, Microsoft", "Monkey, Mouse, Moose", "Mango, Muffin, Marshmallow", "Mud, Mould, Mouthwash (don’t swallow!)"]}, "sayings": [["Seenager", "A senior (50+) who acts, dresses or lives with the energy and interests of a younger person (senior + teenager)."], ["Phubbing", "Ignoring the person you’re with by focusing on your phone instead (phone + snubbing)."], ["The bee’s knees", "Something or someone excellent, of the highest quality."], ["All mouth and no trousers", "Someone who talks big but doesn’t back it up with action."], ["Bob’s your uncle", "“And there you have it” – it’s as simple as that."]], "flags": [["ee", "Estonia", "Tallinn"], ["la", "Laos", "Vientiane"], ["ml", "Mali", "Bamako"], ["co", "Colombia", "Bogotá"], ["ae", "United Arab Emirates", "Abu Dhabi"], ["ro", "Romania", "Bucharest"], ["bd", "Bangladesh", "Dhaka"], ["sl", "Sierra Leone", "Freetown"], ["th", "Thailand", "Bangkok"], ["pe", "Peru", "Lima"]], "shows": [["Friends", "I’ll Be There for You", "The Rembrandts"], ["Titanic", "My Heart Will Go On", "Céline Dion"], ["Top Gun", "Danger Zone", "Kenny Loggins"], ["Stranger Things", "Running Up That Hill", "Kate Bush"], ["Frozen", "Let It Go", "Idina Menzel"], ["Dirty Dancing", "(I’ve Had) The Time of My Life", "Bill Medley & Jennifer Warnes"], ["Ghostbusters", "Ghostbusters", "Ray Parker Jr."], ["Rocky III", "Eye of the Tiger", "Survivor"], ["Wednesday", "Goo Goo Muck", "The Cramps"], ["Pulp Fiction", "Misirlou", "Dick Dale & His Del-Tones"]], "wheel": [{"name": "Dark blue", "cat": "Geography"}, {"name": "Green", "cat": "Animals"}, {"name": "Red", "cat": "Movies"}, {"name": "Yellow", "cat": "Music"}, {"name": "Light blue", "cat": "Pop Culture"}]};
+/* ---------- storage ---------- */
+const S = {
+  get(k, d) { try { const v = localStorage.getItem('pq_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('pq_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const $ = id => document.getElementById(id);
+const FILE = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+const QUIZ = (!FILE || FILE === 'index') ? '' : FILE;          // '' = the main quiz
+const QK = k => QUIZ ? k + '__' + QUIZ : k;                       // per-quiz storage key
+const QUIZ_NAME = QUIZ ? QUIZ.replace(/-/g, ' ') : 'Main quiz';
+const C = {gold:'#FFC93C',coral:'#FF6B6B',teal:'#3DD6C8',pink:'#FF7EB9',lime:'#A6E35A',purple:'#B18CFF',orange:'#FF9A3C',lblue:'#5CC8F0',dust:'#B9C7BC',chalk:'#F6F2E6',dk:'#17302A'};
+const PARTY = [C.gold,C.coral,C.teal,C.pink,C.lime,C.purple,C.orange];
+const RC = [C.gold,C.pink,C.lime,C.teal,C.orange,C.coral,C.purple,C.lblue];
+const NAMES = ['General Knowledge','Finish the Lyrics','60-Second Drawing','The Letter Game','What Do I Mean?','Flags & Capitals','What Show Am I?','Double It & Pass It On'];
+const DEFAULT_TEAMS = [
+  {name:'Dark blue', color:'#1B3EA8', key:'1'}, {name:'Green', color:'#3FB54A', key:'2'},
+  {name:'Red', color:'#E63B3B', key:'3'}, {name:'Yellow', color:'#F5C518', key:'4'}, {name:'Light blue', color:'#5CC8F0', key:'5'}];
+let TEAMS = S.get('teams', DEFAULT_TEAMS);
+function toast(t, ms = 2500) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => e.style.display = 'none', ms); }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- decorations ---------- */
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const EDGE = [[1,92,98,7],[93,14,6,76],[1,40,4,50]];
+const WIDE = EDGE.concat([[72,16,26,16],[80,74,18,15],[2,15,12,12]]);
+function confetti(n, zones, big) {
+  let h = '';
+  for (let i = 0; i < n; i++) {
+    const z = zones[Math.floor(rnd() * zones.length)], k = rnd(), s = (0.55 + rnd() * 0.75) * (big ? 1.35 : 1);
+    const x = z[0] + rnd() * z[2], y = z[1] + rnd() * z[3], col = PARTY[Math.floor(rnd() * 7)], r = Math.floor(rnd() * 360);
+    let st = `left:${x}%;top:${y}%;background:${col};transform:rotate(${r}deg);`;
+    if (k < .5) st += `width:${s}cqw;height:${s * .45}cqw;`;
+    else if (k < .8) st += `width:${s * .7}cqw;height:${s * .7}cqw;border-radius:50%;`;
+    else st += `width:${s * .8}cqw;height:${s * .8}cqw;clip-path:polygon(50% 0,100% 100%,0 100%);`;
+    h += `<div class="conf" style="${st}"></div>`;
+  }
+  return h;
+}
+function bunting() {
+  let h = '<svg class="abs" style="left:0;top:0;width:100%;height:12cqw" viewBox="0 0 1000 90" preserveAspectRatio="none"><path d="M0 8 Q500 60 1000 8" fill="none" stroke="#F6F2E6" stroke-width="2"/>';
+  for (let i = 0; i < 16; i++) { const cx = (i + .5) * 62.5, t = cx / 1000, cy = 8 + 52 * 4 * t * (1 - t) / 2 * 1.0; const y = 8 + (1 - Math.pow(2 * t - 1, 2)) * 26;
+    h += `<polygon points="${cx - 22},${y} ${cx + 22},${y} ${cx},${y + 46}" fill="${PARTY[i % 7]}"/>`; }
+  return h + '</svg>';
+}
+const header = (label, color, right) => `<div class="hdr" style="color:${color}">${esc(label).toUpperCase()}</div>` + (right ? `<div class="count">${esc(right)}</div>` : '');
+const badge = (n, color) => `<div class="badge" style="background:${color}">${n}</div>`;
+
+/* ---------- slide renderers ---------- */
+const R = {
+  welcome: () => bunting() + confetti(110, WIDE.concat([[1,13,98,8]]), 1) + `<div class="mid"><div class="kicker" style="color:${C.gold};font-size:2.6cqw">WELCOME TO</div><div class="big" style="font-size:9cqw">Pub Quiz Night!</div><div class="sub">8 games · buzzers · chalkboards · one wheel of chaos</div></div>`,
+  rules: d => confetti(30, EDGE) + header(d.label, d.color) + `<div class="rules"><h2>${esc(d.title)}</h2><ul>${d.lines.map((l, i) => `<li><span class="star" style="background:${PARTY[i % 7]}"></span>${esc(l)}</li>`).join('')}</ul></div>`,
+  order: () => confetti(30, EDGE) + header("Tonight's running order", C.gold) + `<div class="order">${NAMES.map((n, i) => `<div style="border-color:${RC[i]}"><b style="color:${RC[i]}">GAME ${i + 1}</b><span>${n}</span></div>`).join('')}</div>`,
+  title: d => bunting() + confetti(70, WIDE.concat([[1,13,98,6]]), 1) + `<div class="mid"><div class="kicker" style="color:${d.color};font-size:2.8cqw">${esc(d.kicker).toUpperCase()}</div><div class="big">${esc(d.title)}</div>${d.sub ? `<div class="sub">${esc(d.sub)}</div>` : ''}</div>`,
+  q: d => confetti(14, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="qtext">${esc(d.text)}</div>`,
+  a: d => confetti(26, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="smallq">${esc(d.q)}</div><div class="card" style="border-color:${d.color}"><div class="lab" style="color:${d.color}">${esc(d.lab || 'ANSWER')}</div><div class="ans" style="font-size:${d.a.length > 70 ? 3 : d.a.length > 45 ? 3.6 : 4.6}cqw">${esc(d.a)}</div>${d.extra ? `<div class="sub" style="margin-top:.8cqw;font-size:2.6cqw;color:#F6F2E6">${esc(d.extra)}</div>` : ''}</div>`,
+  listen: d => confetti(22, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="mid"><div class="kicker" style="color:${C.dust};font-size:2.6cqw">${esc(d.kicker)}</div><div class="big">${esc(d.title)}</div><div class="sub">${esc(d.sub)}</div></div>`,
+  flagq: d => confetti(14, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="abs h" style="left:18.5cqw;top:10cqw;font-size:3.2cqw">Buzz in! Which country?</div><div class="flagwrap" style="left:50%;top:19cqw;height:27cqw;transform:translateX(-42%) rotate(-1.5deg)"><img src="https://flagcdn.com/w640/${d.iso}.png" alt=""></div>`,
+  flaga: d => confetti(26, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="flagwrap" style="left:9cqw;top:22cqw;height:20cqw"><img src="https://flagcdn.com/w640/${d.iso}.png" alt=""></div><div class="abs" style="left:56cqw;top:20cqw;right:4cqw"><div class="kicker" style="color:${d.color};font-size:1.6cqw">COUNTRY</div><div class="h" style="font-size:${d.country.length > 14 ? 3.4 : 4.4}cqw">${esc(d.country)}</div><div class="kicker" style="color:${d.color};font-size:1.6cqw;margin-top:2cqw">CAPITAL</div><div class="h" style="font-size:4.4cqw">${esc(d.capital)}</div></div>`,
+  letter: d => bunting() + confetti(70, WIDE, 1) + `<div class="mid"><div class="kicker" style="color:${C.dust};font-size:2.4cqw">LETTER ${d.n} OF 2 · YOUR LETTER IS</div><div class="badge" style="position:relative;left:auto;top:auto;width:26cqw;height:26cqw;font-size:13cqw;background:${d.color};margin-top:2cqw">${esc(d.letter)}</div></div>`,
+  grid: d => header(d.label, d.color) + `<div class="abs h" style="right:3.4cqw;top:1.6cqw;width:6cqw;height:6cqw;border-radius:50%;background:${d.color};color:${C.dk};display:flex;align-items:center;justify-content:center;font-size:3.6cqw">${esc(d.letter)}</div><div class="grid">${DATA.letterCats.map((c, k) => `<div class="cell" style="border-color:${PARTY[k % 7]}"><div class="cat" style="color:${PARTY[k % 7]}">${esc(c).toUpperCase()}</div>${d.ex ? `<div class="ex">${esc(d.ex[k])}</div>` : '<div class="line"></div>'}</div>`).join('')}</div>`,
+  saying: d => confetti(22, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="mid" style="left:18cqw;right:6cqw;justify-content:flex-start;padding-top:14cqw"><div class="kicker" style="color:${C.dust};font-size:2.4cqw">WHAT DOES IT MEAN?</div><div class="big" style="color:${d.color};font-size:6cqw;margin-top:1.4cqw">“${esc(d.text)}”</div></div>`,
+  colours: d => confetti(30, EDGE) + header(d.label, d.color) + `<div class="abs h" style="left:5cqw;top:9cqw;font-size:4.6cqw">Know your colours</div>` + TEAMS.map((t, k) => { const pos = [[7,21],[37,21],[67,21],[22,38],[52,38]][k] || [7, 50]; return `<div class="abs" style="left:${pos[0]}cqw;top:${pos[1]}cqw;display:flex;align-items:center;gap:1.6cqw"><div style="width:9cqw;height:9cqw;border-radius:50%;background:${t.color};border:.3cqw solid ${C.chalk}"></div><div><div class="kicker" style="color:${t.color};font-size:1.6cqw;filter:brightness(1.4)">${esc(t.name).toUpperCase()}</div><div class="h" style="font-size:3cqw">${esc(DATA.wheel[k] ? DATA.wheel[k].cat : '')}</div></div></div>`; }).join(''),
+  spin: d => confetti(30, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="abs h" style="left:18.5cqw;top:10cqw;font-size:5cqw">Spin the wheel!</div>` +
+     [['ANSWER IT','±5','Right +5 · Wrong −5',C.lime],['DOUBLE IT','±10','Pass to that colour’s team',C.coral]].map((b, k) => `<div class="abs center" style="left:${18.5 + k * 30}cqw;top:22cqw;width:27cqw;height:21cqw;border:.35cqw solid ${b[3]};border-radius:2cqw;background:${C.dk};padding-top:2cqw"><div class="kicker" style="color:${b[3]};font-size:2.2cqw">${b[0]}</div><div class="h" style="font-size:7cqw">${b[1]}</div><div style="font-size:1.7cqw;color:${C.dust}">${b[2]}</div></div>`).join(''),
+  mc: d => { const c = cfg(SLIDES[idx]); const opts = c.options || ['', '', '', '']; const L = ['A', 'B', 'C', 'D'];
+    return confetti(14, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="abs h" style="left:18.5cqw;top:10.5cqw;font-size:3.6cqw">Which line comes next?</div>` +
+      `<div class="abs" style="left:18.5cqw;right:5cqw;top:19cqw;bottom:6cqw;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.6cqw">` +
+      L.map((l, k) => { const right = MC.revealed && c.correct === l, dim = MC.revealed && !right;
+        return `<div style="border:.35cqw solid ${right ? C.lime : PARTY[k]};background:${right ? 'rgba(166,227,90,.22)' : C.dk};border-radius:1.6cqw;padding:1.2cqw 1.8cqw;display:flex;align-items:center;gap:1.6cqw;opacity:${dim ? .3 : 1}">
+          <div class="h" style="flex:none;width:5cqw;height:5cqw;border-radius:50%;background:${right ? C.lime : PARTY[k]};color:${C.dk};display:flex;align-items:center;justify-content:center;font-size:3cqw">${l}</div>
+          <div class="h" style="font-size:${(opts[k] || '').length > 40 ? 2.2 : 2.8}cqw;line-height:1.15;color:${opts[k] ? C.chalk : C.dust}">${opts[k] ? esc(opts[k]) : '(type in edit mode)'}</div></div>`; }).join('') + `</div>`; },
+  plain: d => (d.bunting ? bunting() : '') + confetti(d.conf || 80, WIDE.concat([[1,13,98,6]]), 1) + `<div class="mid"><div class="kicker" style="color:${d.color};font-size:2.6cqw">${esc(d.kicker)}</div><div class="big">${esc(d.title)}</div>${d.sub ? `<div class="sub">${esc(d.sub)}</div>` : ''}</div>`
+};
+
+/* ---------- build the deck ---------- */
+const SLIDES = [];
+function add(id, type, d, cfg) { SLIDES.push({id, type, d: d || {}, def: Object.assign({timer: 0, auto: true, buzz: false, buzzTime: 0, song: '', songName: '', start: '0:00', playFor: '', keepMusic: false}, cfg || {})}); }
+function scores(g, color, line) { add(`g${g}-end`, 'plain', {bunting: 1, kicker: g === 'B' ? 'END OF THE BONUS GAME' : `END OF GAME ${g}`, title: 'Scores on the board!', sub: line || 'Add up your points and tell the quizmaster', color}); }
+(function build() {
+  const D = DATA;
+  add('welcome', 'welcome');
+  add('house', 'rules', {label: 'Welcome · How it works', color: C.gold, title: 'House rules', lines: ['Each team gets a buzzer and a matching coloured coaster', 'Every game has its own scoring: listen to the rules each round', 'Chalkboards up, phones down. No Googling!', 'Only the first team to buzz gets to answer', 'The quizmaster’s decision is final (bribes accepted at the bar)']});
+  add('order', 'order');
+  // Game 1
+  let c = RC[0], L = 'Game 1 · ' + NAMES[0];
+  add('g1-title', 'title', {kicker: 'Game 1', title: NAMES[0], sub: '10 questions. Write your answer on your chalkboard. 1 point each.', color: c});
+  D.r1.forEach((q, i) => add(`g1-q${i + 1}`, 'q', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`, text: q[0]}));
+  add('g1-ans', 'title', {kicker: 'Game 1', title: 'Answers!', sub: 'Chalk down. Let’s see how you did…', color: c});
+  D.r1.forEach((q, i) => add(`g1-a${i + 1}`, 'a', {label: 'Game 1 · Answers', color: c, i: i + 1, n: `${i + 1} / 10`, q: q[0], a: q[1]}));
+  scores(1, c);
+  // Game 2
+  c = RC[1]; L = 'Game 2 · ' + NAMES[1];
+  add('g2-title', 'title', {kicker: 'Game 2', title: NAMES[1], sub: 'Grab your buzzers! 10 songs. Finish the line.', color: c});
+  add('g2-rules', 'rules', {label: 'Game 2 · How it works', color: c, title: 'Buzz and sing!', lines: ['The quizmaster plays a song, then the music stops', 'First team to buzz gets to finish the lyrics', 'You then have 10 seconds to agree on your answer', 'Correct lyrics = 1 point', 'Wrong? The other teams can buzz in and steal it!']});
+  D.songs.forEach((s, i) => {
+    add(`g2-s${i + 1}`, 'listen', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`, kicker: `SONG ${i + 1}`, title: 'Listen up…', sub: 'Buzz in to finish the line!'}, {buzz: true, buzzTime: 10, query: s[0] + ' ' + s[1]});
+    add(`g2-r${i + 1}`, 'listen', {label: 'Game 2 · Song ' + (i + 1), color: c, i: i + 1, n: `${i + 1} / 10`, kicker: 'THAT WAS', title: s[0], sub: 'by ' + s[1]}, {keepMusic: true});
+  });
+  scores(2, c);
+  // Game 3
+  c = RC[2];
+  add('g3-title', 'title', {kicker: 'Game 3', title: NAMES[2], sub: 'One artist. One minute. Zero words.', color: c});
+  add('g3-rules', 'rules', {label: 'Game 3 · How it works', color: c, title: 'Draw it, don’t say it!', lines: ['One player per team comes up with a chalkboard', 'The quizmaster secretly shows the artist a card with 5 things', '60 seconds. No talking, no letters, no pointing', 'The artist’s own team shouts out their guesses', 'Every correct guess = 1 point. Skip a word? No going back!']});
+  add('g3-draw', 'plain', {bunting: 1, kicker: 'NEXT ARTIST, COME ON UP!', title: '60 seconds', sub: 'Press T to start the clock', color: c}, {timer: 60, auto: false});
+  scores(3, c, 'Count your correct guesses and tell the quizmaster');
+  // Game 4
+  c = RC[3];
+  add('g4-title', 'title', {kicker: 'Game 4', title: NAMES[3], sub: 'One letter. Nine categories. One minute.', color: c});
+  add('g4-rules', 'rules', {label: 'Game 4 · How it works', color: c, title: 'Beat the clock!', lines: ['The quizmaster reveals a letter', 'Fill in all 9 categories with a word that starts with that letter', 'You have 1 minute. Chalkboards or answer sheet', 'Each correct answer = 1 point (max 9 per letter)', 'First team to finish with all 9 correct = 3 BONUS points', 'Two letters in total']});
+  Object.keys(D.letters).forEach((letter, n) => {
+    add(`g4-l${n + 1}`, 'letter', {letter, n: n + 1, color: c});
+    add(`g4-grid${n + 1}`, 'grid', {label: `Game 4 · Letter ${letter} · 1 minute!`, color: c, letter}, {timer: 60});
+    add(`g4-ex${n + 1}`, 'grid', {label: `Game 4 · Example answers for ${letter}`, color: c, letter, ex: D.letters[letter]});
+  });
+  scores(4, c, '1 point per correct answer + 3 bonus for the fastest full board');
+  add('break', 'plain', {bunting: 1, kicker: 'HALF TIME', title: 'Drinks Break!', sub: 'Top up, stretch your legs, swap gossip.\nWe’re back in 15 minutes.', color: C.gold, conf: 90});
+  // Game 5
+  c = RC[4]; L = 'Game 5 · ' + NAMES[4];
+  add('g5-title', 'title', {kicker: 'Game 5', title: NAMES[4], sub: '5 sayings. You tell us what they mean.', color: c});
+  add('g5-rules', 'rules', {label: 'Game 5 · How it works', color: c, title: 'Define it!', lines: ['One saying at a time appears on screen', 'Your team has 1 minute to write a definition', 'The quizmaster picks the best definitions', 'Best = 5 points, then 4, 3, 2 and 1', 'Funny AND accurate scores best. Charm the judge!']});
+  D.sayings.forEach((s, i) => {
+    add(`g5-s${i + 1}`, 'saying', {label: L, color: c, i: i + 1, n: `${i + 1} / 5`, text: s[0]}, {timer: 60});
+    add(`g5-m${i + 1}`, 'a', {label: 'Game 5 · The real meaning', color: c, i: i + 1, n: `${i + 1} / 5`, q: '“' + s[0] + '”', a: s[1]});
+  });
+  scores(5, c, '5-4-3-2-1 points for the best definitions');
+  // Game 6
+  c = RC[5]; L = 'Game 6 · ' + NAMES[5];
+  add('g6-title', 'title', {kicker: 'Game 6', title: NAMES[5], sub: 'Buzzers ready! Name the country… and dare to name the capital?', color: c});
+  add('g6-rules', 'rules', {label: 'Game 6 · How it works', color: c, title: 'Buzz, guess, gamble!', lines: ['Buzz in as soon as you know the flag', 'Country right = +1 point, wrong = −1 point', 'Then decide: go for the capital?', 'Capital right = +1 bonus, wrong = −2 points', 'The capital is optional: only go for it if you’re sure!']});
+  D.flags.forEach((f, i) => {
+    add(`g6-f${i + 1}`, 'flagq', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`, iso: f[0]}, {buzz: true});
+    add(`g6-a${i + 1}`, 'flaga', {label: 'Game 6 · Answer', color: c, i: i + 1, n: `${i + 1} / 10`, iso: f[0], country: f[1], capital: f[2]});
+  });
+  scores(6, c);
+  // Game 7
+  c = RC[6]; L = 'Game 7 · ' + NAMES[6];
+  add('g7-title', 'title', {kicker: 'Game 7', title: NAMES[6], sub: '10 songs from TV shows and films. Name the show AND the song.', color: c});
+  add('g7-rules', 'rules', {label: 'Game 7 · How it works', color: c, title: 'Name that show!', lines: ['The quizmaster plays a song for 30 seconds', 'Then your team has 30 seconds to agree', 'Write the show or film AND the song title', 'Show or film = 1 point', 'Song title = 1 point (2 points per clip)']});
+  D.shows.forEach((s, i) => add(`g7-c${i + 1}`, 'listen', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`, kicker: `CLIP ${i + 1}`, title: 'What show am I?', sub: '30 seconds of music… then 30 seconds to decide'}, {timer: 60, playFor: '30', query: s[1] + ' ' + s[2]}));
+  D.shows.forEach((s, i) => add(`g7-a${i + 1}`, 'a', {label: 'Game 7 · Answers', color: c, i: i + 1, n: `${i + 1} / 10`, q: 'Clip ' + (i + 1), lab: 'SHOW / FILM', a: s[0], extra: 'Song: “' + s[1] + '” by ' + s[2]}));
+  scores(7, c, 'Show + song = 2 points per clip');
+  // Bonus game: multiple choice lyrics
+  c = C.pink; L = 'Bonus · Which Line Comes Next?';
+  add('b-title', 'title', {kicker: 'Bonus game', title: 'Which Line Comes Next?', sub: 'The music stops. Four options. Buzz in and pick the right line!', color: c});
+  add('b-rules', 'rules', {label: 'Bonus · How it works', color: c, title: 'A, B, C or D?', lines: ['The quizmaster plays a song, then the music stops', 'Four possible next lines appear on screen', 'First team to buzz picks A, B, C or D (10 seconds)', 'Right = 1 point. Wrong? The other teams can buzz in and steal it', 'Then the music plays on, and you hear who was right']});
+  ['Everybody Backstreet Boys', 'Mambo No. 5 Lou Bega', 'Barbie Girl Aqua', 'Macarena Los Del Rio', '99 Luftballons Nena', 'Atemlos durch die Nacht Helene Fischer', 'Don\'t Stop Me Now Queen', 'Uptown Funk Bruno Mars', 'Hey Jude Beatles', 'Rhythm Is a Dancer Snap'].forEach((q, i) =>
+    add(`b-s${i + 1}`, 'mc', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`}, {buzz: true, buzzTime: 10, query: q, options: ['', '', '', ''], correct: 'A'}));
+  scores('B', c, '1 point per right answer');
+  // Game 8
+  c = RC[7]; L = 'Game 8 · ' + NAMES[7];
+  add('g8-title', 'title', {kicker: 'Game 8', title: NAMES[7], sub: 'Spin the wheel. Answer it… or double it and give it to the next team!', color: c});
+  add('g8-rules', 'rules', {label: 'Game 8 · How it works', color: c, title: 'Spin, answer or pass!', lines: ['Lowest-scoring team spins first. The wheel picks a colour = category', 'The quizmaster reads the question to the spinner', 'ANSWER IT: right = +5, wrong = −5 for your team', 'OR DOUBLE IT: pass it to the team with that colour for ±10 points', 'Whoever answers gets 30 seconds to discuss', 'If the colour is yours, you must answer it yourself']});
+  add('g8-colours', 'colours', {label: 'Game 8 · Colour = category', color: c});
+  for (let i = 1; i <= 10; i++) add(`g8-spin${i}`, 'spin', {label: 'Game 8 · Spin', color: c, i, n: `${i} / 10`}, {timer: 30, auto: false});
+  add('final', 'plain', {bunting: 1, kicker: 'FINAL SCORES', title: 'And the winner is…', sub: 'Cheers for playing! See you at the next quiz.', color: C.gold, conf: 140});
+})();
+let CFG = S.get(QK('cfg'), null);
+if (CFG === null) { CFG = QUIZ ? JSON.parse(JSON.stringify(S.get('cfg', {}))) : {}; S.set(QK('cfg'), CFG); }  // archive copy starts with the main quiz's settings
+const cfg = s => Object.assign({}, s.def, CFG[s.id] || {});
+function setCfg(id, patch) { CFG[id] = Object.assign({}, CFG[id] || {}, patch); S.set(QK('cfg'), CFG); }
+
+/* ---------- sound ---------- */
+let AC = null;
+function ac() { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC; }
+function tone(freq, start, dur, type, vol) { const a = ac(), o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(vol, a.currentTime + start); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + start + dur); o.connect(g).connect(a.destination); o.start(a.currentTime + start); o.stop(a.currentTime + start + dur + .05); }
+const SND = {
+  buzz() { tone(160, 0, .75, 'sawtooth', .5); tone(240, 0, .75, 'square', .25); },
+  late() { tone(500, 0, .12, 'square', .15); },
+  end() { [0, .3, .6].forEach(t => tone(880, t, .22, 'square', .35)); tone(440, .9, .7, 'sawtooth', .35); },
+  tick() { tone(1200, 0, .05, 'square', .12); }
+};
+const PRESETS = {
+  buzzer: {name: 'Classic buzzer', play() { tone(160, 0, .75, 'sawtooth', .5); tone(240, 0, .75, 'square', .25); }},
+  horn: {name: 'Air horn', play() { [0, .35].forEach(t => { tone(420, t, .3, 'sawtooth', .45); tone(530, t, .3, 'sawtooth', .3); }); tone(420, .7, .8, 'sawtooth', .45); tone(530, .7, .8, 'sawtooth', .3); }},
+  ding: {name: 'Ding ding', play() { tone(1320, 0, .5, 'sine', .5); tone(1320, .25, .7, 'sine', .5); tone(2640, 0, .3, 'sine', .15); }},
+  boing: {name: 'Boing', play() { const a = ac(), o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(140, a.currentTime); o.frequency.exponentialRampToValueAtTime(900, a.currentTime + .25); o.frequency.exponentialRampToValueAtTime(220, a.currentTime + .6); g.gain.setValueAtTime(.6, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .8); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + .85); }},
+  siren: {name: 'Siren', play() { const a = ac(), o = a.createOscillator(), g = a.createGain(); o.type = 'square'; for (let i = 0; i < 4; i++) { o.frequency.setValueAtTime(600, a.currentTime + i * .3); o.frequency.linearRampToValueAtTime(1000, a.currentTime + i * .3 + .15); } g.gain.setValueAtTime(.25, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + 1.25); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + 1.3); }},
+  fanfare: {name: 'Fanfare', play() { [[523, 0], [659, .14], [784, .28], [1047, .42]].forEach(([f, t]) => tone(f, t, t > .4 ? .7 : .16, 'square', .3)); }}
+};
+/* custom recordings live in IndexedDB (they are too big for normal storage) */
+const DB = {
+  open() { return this.p || (this.p = new Promise((res, rej) => { const r = indexedDB.open('pubquiz', 1); r.onupgradeneeded = () => r.result.createObjectStore('sounds'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
+  async put(k, v) { const d = await this.open(); return new Promise((res, rej) => { const t = d.transaction('sounds', 'readwrite'); t.objectStore('sounds').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); },
+  async get(k) { const d = await this.open(); return new Promise(res => { const r = d.transaction('sounds').objectStore('sounds').get(k); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); },
+  async del(k) { const d = await this.open(); return new Promise(res => { const t = d.transaction('sounds', 'readwrite'); t.objectStore('sounds').delete(k); t.oncomplete = res; }); }
+};
+const CUSTOM = {};  // team index -> object URL
+async function loadCustom() { for (let i = 0; i < TEAMS.length; i++) { try { const b = await DB.get('team' + i); if (b) CUSTOM[i] = URL.createObjectURL(b); } catch (e) {} } }
+function teamSound(i) {
+  const t = TEAMS[i];
+  if (t.sound === 'custom' && CUSTOM[i]) { const a = new Audio(CUSTOM[i]); a.volume = 1; a.play().catch(() => PRESETS.buzzer.play()); return; }
+  (PRESETS[t.sound] || PRESETS.buzzer).play();
+}
+
+/* ---------- Spotify ---------- */
+const CLIENT_ID = '993e789b7b784ef6893e6dcac2892cd6';
+const REDIRECT = location.hostname.endsWith('github.io') ? location.origin + '/quiz/' : (location.origin + location.pathname).replace(/index\.html$/, '');
+const SCOPES = 'user-read-playback-state user-modify-playback-state';
+const SP = {
+  tok: S.get('sp', null), device: S.get('device', ''), volume: S.get('volume', 80), playing: false, stopTimer: null, err: '',
+  connected() { return !!(this.tok && this.tok.refresh); },
+  async login() {
+    const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const v = b64(crypto.getRandomValues(new Uint8Array(48)));
+    S.set('verifier', v); S.set('returnTo', idx); S.set('returnPage', location.href.split('?')[0]);
+    const ch = b64(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
+    location.href = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({response_type: 'code', client_id: CLIENT_ID, scope: SCOPES, code_challenge_method: 'S256', code_challenge: ch, redirect_uri: REDIRECT});
+  },
+  async tokenReq(body) {
+    const r = await fetch('https://accounts.spotify.com/api/token', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams(Object.assign({client_id: CLIENT_ID}, body))});
+    const j = await r.json(); if (!r.ok) throw new Error(j.error_description || j.error);
+    this.tok = {access: j.access_token, refresh: j.refresh_token || (this.tok && this.tok.refresh), exp: Date.now() + j.expires_in * 1000};
+    S.set('sp', this.tok);
+  },
+  async handleReturn() {
+    const q = new URLSearchParams(location.search);
+    if (!q.get('code')) return false;
+    history.replaceState({}, '', REDIRECT);
+    try { await this.tokenReq({grant_type: 'authorization_code', code: q.get('code'), redirect_uri: REDIRECT, code_verifier: S.get('verifier', '')}); toast('Spotify connected'); }
+    catch (e) { toast('Spotify login failed: ' + e.message, 5000); }
+    const back = S.get('returnPage', ''); S.set('returnPage', '');
+    if (back && back !== REDIRECT && back.startsWith(location.origin)) { location.href = back; await new Promise(() => {}); }
+    return true;
+  },
+  async access() {
+    if (!this.tok) throw new Error('not connected');
+    if (Date.now() > this.tok.exp - 60000) await this.tokenReq({grant_type: 'refresh_token', refresh_token: this.tok.refresh});
+    return this.tok.access;
+  },
+  async api(path, opts = {}) {
+    const t = await this.access();
+    const r = await fetch('https://api.spotify.com/v1' + path, Object.assign({}, opts, {headers: {Authorization: 'Bearer ' + t, 'Content-Type': 'application/json'}}));
+    if (r.status === 204) return null;
+    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+    if (!r.ok) { const m = (j && j.error && (j.error.reason || j.error.message)) || r.status; throw new Error(String(m)); }
+    return j;
+  },
+  dev(prefix) { return this.device ? prefix + 'device_id=' + encodeURIComponent(this.device) : ''; },
+  async devices() { const j = await this.api('/me/player/devices'); return j.devices || []; },
+  async ensureDevice() {
+    const list = await this.devices();
+    let d = list.find(x => x.id === this.device) || list.find(x => x.type === 'Computer') || list[0];
+    if (!d) throw new Error('Open the Spotify app on the MacBook and play/pause any song once');
+    this.device = d.id; S.set('device', d.id); return d;
+  },
+  async setVol(v) { try { await this.api('/me/player/volume?volume_percent=' + Math.round(v) + this.dev('&'), {method: 'PUT'}); } catch (e) {} },
+  async play(uri, startMs, playForS) {
+    clearTimeout(this.stopTimer);
+    try {
+      await this.ensureDevice();
+      const quiet = startMs > 0;
+      if (quiet) await this.setVol(0);
+      try {
+        await this.api('/me/player/play' + this.dev('?'), {method: 'PUT', body: JSON.stringify({uris: [uri], position_ms: startMs})});
+        if (quiet) {
+          await new Promise(r => setTimeout(r, 600));
+          await this.api('/me/player/seek?position_ms=' + startMs + this.dev('&'), {method: 'PUT'}).catch(() => {});
+          await new Promise(r => setTimeout(r, 500));
+          const st = await this.api('/me/player').catch(() => null);
+          if (st && st.progress_ms < startMs - 1500) await this.api('/me/player/seek?position_ms=' + startMs + this.dev('&'), {method: 'PUT'}).catch(() => {});
+        }
+      } finally { if (quiet) await this.setVol(this.volume); }
+      this.playing = true; this.err = '';
+      if (playForS) this.stopTimer = setTimeout(() => this.pause(), playForS * 1000);
+    } catch (e) { this.err = e.message; toast('Music: ' + e.message, 5000); }
+    status();
+  },
+  async pause() {
+    clearTimeout(this.stopTimer);
+    if (!this.connected()) return;
+    for (let i = 0; i < 3; i++) {
+      try { await this.api('/me/player/pause' + this.dev('?'), {method: 'PUT'}); } catch (e) {}
+      await new Promise(r => setTimeout(r, 400));
+      try { const st = await this.api('/me/player'); if (!st || !st.is_playing) break; } catch (e) { break; }
+    }
+    this.playing = false; status();
+  },
+  async toggle() {
+    if (!this.connected()) return toast('Spotify isn’t connected. Press E to connect.');
+    try { const st = await this.api('/me/player'); if (st && st.is_playing) await this.pause(); else { await this.api('/me/player/play' + this.dev('?'), {method: 'PUT'}); this.playing = true; } } catch (e) { toast('Music: ' + e.message); }
+    status();
+  },
+  async search(q) { const j = await this.api('/search?' + new URLSearchParams({q, type: 'track', limit: 5})); return (j.tracks && j.tracks.items) || []; }
+};
+
+/* ---------- timer ---------- */
+const T = {left: 0, total: 0, h: null,
+  start(sec) { this.total = sec; this.left = sec; clearInterval(this.h); $('timesup').style.display = 'none'; $('timer').style.display = 'block'; this.draw(); this.h = setInterval(() => this.tick(), 1000); status(); },
+  tick() { this.left--; this.draw(); if (this.left <= 5 && this.left > 0) SND.tick(); if (this.left <= 0) this.done(); },
+  done() { clearInterval(this.h); this.h = null; SND.end(); const c = cfg(SLIDES[idx]); if (c.song && !c.playFor) SP.pause(); $('timesup').style.display = 'flex'; setTimeout(() => $('timesup').style.display = 'none', 2500); status(); },
+  stop() { clearInterval(this.h); this.h = null; $('timer').style.display = 'none'; $('timesup').style.display = 'none'; },
+  draw() { $('tnum').textContent = Math.max(0, this.left); const f = this.total ? Math.max(0, this.left) / this.total : 0; $('ring').setAttribute('stroke-dashoffset', (263.9 * (1 - f)).toFixed(1)); $('ring').setAttribute('stroke', this.left <= 10 ? C.coral : C.gold); }
+};
+
+/* ---------- buzzers ---------- */
+const B = {order: [], armed: false, cd: null,
+  press(t) {
+    if (!this.armed || this.order.includes(t)) return;
+    this.order.push(t);
+    if (this.order.length === 1) {
+      teamSound(t); if (SP.playing) SP.pause();
+      const team = TEAMS[t]; $('buzz').style.background = team.color; $('buzz').style.color = (team.name === 'Yellow' || team.name === 'Light blue') ? C.dk : C.chalk;
+      $('bwho').textContent = 'Team ' + team.name + '!'; $('bnext').textContent = ''; $('bcd').textContent = ''; $('buzz').style.display = 'flex';
+      const bt = cfg(SLIDES[idx]).buzzTime;
+      if (bt) { let s = bt; $('bcd').textContent = s; clearInterval(this.cd); this.cd = setInterval(() => { s--; $('bcd').textContent = s > 0 ? s : 'Answer!'; if (s <= 0) { clearInterval(this.cd); SND.end(); } }, 1000); }
+    } else { SND.late(); $('bnext').textContent = 'Next in line: ' + this.order.slice(1).map(i => TEAMS[i].name).join(', '); }
+  },
+  reset() { this.order = []; clearInterval(this.cd); $('buzz').style.display = 'none'; status(); }
+};
+
+/* ---------- navigation ---------- */
+let idx = 0;
+const MC = {revealed: false};
+function render() {
+  const s = SLIDES[idx], c = cfg(s);
+  seed = 7 + idx * 13;
+  $('board').className = 'board' + (c.timer ? ' has-timer' : '');
+  $('board').innerHTML = R[s.type](s.d);
+  $('timer').className = s.type === 'plain' ? 'big' : '';
+}
+function go(n) {
+  if (n < 0 || n >= SLIDES.length) return;
+  const prev = cfg(SLIDES[idx]); idx = n; S.set(QK('idx'), idx);
+  const c = cfg(SLIDES[idx]);
+  B.reset(); B.armed = c.buzz; T.stop(); MC.revealed = false; render();
+  if (c.song) SP.play(c.song, toMs(c.start), Number(c.playFor) || 0);
+  else if ((SP.playing || prev.song) && !c.keepMusic) SP.pause();
+  if (c.timer && c.auto) T.start(c.timer);
+  status();
+}
+function toMs(s) { const m = String(s || '').trim().match(/^(\d+):(\d{1,2})$/); if (m) return (+m[1] * 60 + +m[2]) * 1000; const n = Number(s); return isNaN(n) ? 0 : n * 1000; }
+function status() {
+  const s = SLIDES[idx], c = cfg(s);
+  $('status').textContent = (QUIZ ? QUIZ_NAME + ' · ' : '') + `${idx + 1}/${SLIDES.length} · ${s.id}` + (B.armed ? ' · buzzers ON' : '') + (c.song ? ' · ♪ music on this slide' : '') + (c.timer && !c.auto && !T.h ? ' · press T for timer' : '') + (SP.connected() ? '' : ' · Spotify not connected (E)') + (SP.err ? ' · ⚠ ' + SP.err : '') + ' · H hides this';
+}
+document.addEventListener('keydown', e => {
+  if ($('edit').style.display === 'block') { if (e.key === 'Escape' && !e.target.matches('input')) closeEdit(); if (B.learn !== undefined) learnKey(e); return; }
+  ac();
+  const k = e.key;
+  const t = TEAMS.findIndex(x => x.key === k);
+  if (t >= 0) { e.preventDefault(); return B.press(t); }
+  if (k === 'ArrowRight' || k === 'PageDown') { e.preventDefault(); go(idx + 1); }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); go(idx - 1); }
+  else if (k === ' ') { e.preventDefault(); B.reset(); }
+  else if (k === 'p' || k === 'P') SP.toggle();
+  else if (k === 't' || k === 'T') { const c = cfg(SLIDES[idx]); T.start(c.timer || 60); }
+  else if (k === 'z' || k === 'Z') { B.armed = !B.armed; toast(B.armed ? 'Buzzers ON' : 'Buzzers OFF'); status(); }
+  else if (k === 'F5' || k === 'b' || k === 'B' || k === '.' || k === 'Escape') { e.preventDefault(); } // presenter extra buttons (start show, black screen): ignored on purpose
+  else if (k === 'f' || k === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
+  else if (k === 'h' || k === 'H') $('status').classList.toggle('off');
+  else if (k === 'e' || k === 'E') openEdit();
+  else if ((k === 'r' || k === 'R') && SLIDES[idx].type === 'mc') { MC.revealed = !MC.revealed; render(); if (MC.revealed && SP.connected()) SP.api('/me/player/play' + SP.dev('?'), {method: 'PUT'}).then(() => { SP.playing = true; status(); }).catch(() => {}); }
+  else if (k === 'Home') go(0);
+});
+let mouseT; document.addEventListener('mousemove', () => { document.body.classList.remove('hidecursor'); clearTimeout(mouseT); mouseT = setTimeout(() => document.body.classList.add('hidecursor'), 2500); });
+
+/* ---------- edit mode ---------- */
+function openEdit() { $('edit').style.display = 'block'; drawEdit(); }
+function closeEdit() { $('edit').style.display = 'none'; B.learn = undefined; render(); status(); }
+function learnKey(e) { if (e.key === 'Escape') { B.learn = undefined; drawEdit(); return; } e.preventDefault(); TEAMS[B.learn].key = e.key; S.set('teams', TEAMS); toast(TEAMS[B.learn].name + ' = key "' + e.key + '"'); B.learn = undefined; drawEdit(); }
+function sectionOf(id) { if (/^(b-|gB)/.test(id)) return 'Bonus · Which Line Comes Next?'; const m = id.match(/^g(\d)/); return m ? 'Game ' + m[1] + ' · ' + NAMES[m[1] - 1] : 'Intro & breaks'; }
+function slideLabel(s) { const d = s.d; return d.title && s.type !== 'q' ? (d.kicker ? d.kicker + ' · ' : '') + d.title : d.text || d.country || d.letter || s.id; }
+async function drawEdit() {
+  let h = `<button class="close ghost" onclick="closeEdit()">Close (Esc)</button><h1>Edit mode</h1><div class="muted">Songs, timers and buzzers per slide. Everything saves by itself on this laptop.</div><div style="margin-top:6px">This quiz: <b>${esc(QUIZ_NAME)}</b> <span class="muted">${QUIZ ? '(archived copy, its own songs and settings)' : '(the main quiz at vesoma-quiz.github.io/quiz/)'}</span></div>`;
+  h += `<h3>Spotify</h3>`;
+  if (SP.connected()) {
+    let devs = []; try { devs = await SP.devices(); } catch (e) {}
+    if (devs.length && !devs.some(d => d.id === SP.device)) { const c = devs.find(d => d.type === 'Computer') || devs[0]; SP.device = c.id; S.set('device', c.id); }
+    h += `<span style="color:#A6E35A">✓ Connected</span> &nbsp; Play music on: <select id="devSel">${devs.map(d => `<option value="${d.id}" ${d.id === SP.device ? 'selected' : ''}>${esc(d.name)} (${d.type})</option>`).join('') || '<option>Open Spotify on the MacBook, then reopen edit mode</option>'}</select>
+      &nbsp; Music volume <input id="vol" type="number" min="5" max="100" value="${SP.volume}" style="width:70px">%
+      &nbsp;<button class="ghost" onclick="SP.toggle()">Test play/pause</button>
+      <div style="margin-top:8px"><button class="g" onclick="autoFill()">Auto-fill quiz songs</button> <span class="muted">Finds the songs for Game 2, Game 7 and the bonus game on Spotify, for every empty song slot.</span></div>`;
+  } else h += `<button class="g" onclick="SP.login()">Connect Spotify</button> <span class="muted">Log in with your Premium account. You only do this once.</span>`;
+  h += `<h3>Teams, buzzer keys and sounds</h3><table style="width:auto">${TEAMS.map((t, i) => `<tr><td><span class="team" style="margin:0"><span class="dot" style="background:${t.color}"></span><b>${esc(t.name)}</b></span></td>
+    <td>${B.learn === i ? '<b style="color:#FFC93C">Press the buzzer now…</b>' : 'Key "' + esc(t.key) + '"'} <button class="ghost" onclick="B.learn=${i};drawEdit()">Change</button></td>
+    <td>Sound: <select onchange="TEAMS[${i}].sound=this.value;S.set('teams',TEAMS);drawEdit()">${Object.entries(PRESETS).map(([k, p]) => `<option value="${k}" ${(t.sound || 'buzzer') === k ? 'selected' : ''}>${p.name}</option>`).join('')}<option value="custom" ${t.sound === 'custom' ? 'selected' : ''}>${CUSTOM[i] ? 'My recording' : 'My recording (none yet)'}</option></select></td>
+    <td><button class="${REC.team === i ? '' : 'ghost'}" onclick="toggleRec(${i})">${REC.team === i ? '■ Stop recording' : '● Record'}</button>
+      <label class="ghost" style="cursor:pointer;border:1px solid #B9C7BC;border-radius:8px;padding:7px 12px;font-family:'Lilita One'">Upload file<input type="file" accept="audio/*" style="display:none" onchange="uploadSound(${i},this.files[0])"></label>
+      <button class="ghost" onclick="ac();teamSound(${i})">▶ Test</button></td></tr>`).join('')}</table>
+    <div class="muted">To link a CompuPhase button: click Change next to the team, then press that team’s button. To record: click Record, say your line (max 5 seconds), click Stop. The first time, Chrome asks to use the microphone: click Allow.</div>`;
+  h += `<h3>Keys during the quiz</h3><div class="keys muted"><span>→ / ← next / back</span><span>Space reset buzzers</span><span>P pause / play music</span><span>T start timer</span><span>Z buzzers on/off</span><span>R reveal the right answer (bonus game)</span><span>F full screen</span><span>H host info line</span><span>E edit mode</span></div>`;
+  h += `<h3>Slides</h3><table><tr><th>#</th><th>Slide</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Timer (s)</th><th>Timer starts</th><th>Buzzers</th></tr>`;
+  let sec = '';
+  SLIDES.forEach((s, i) => {
+    const c = cfg(s), se = sectionOf(s.id);
+    if (se !== sec) { sec = se; h += `<tr class="sec"><td colspan="8">${esc(se)}</td></tr>`; }
+    h += `<tr><td class="muted">${i + 1}</td><td style="max-width:260px">${esc(slideLabel(s))}<div class="muted" style="font-size:11px">${s.id}</div></td>
+      <td style="min-width:260px">${c.song ? `<div class="song">♪ ${esc(c.songName || c.song)}</div><button class="ghost" onclick="clearSong('${s.id}')">Remove</button>` : ''}
+        <div><input placeholder="Search Spotify or paste song link" style="width:240px" onkeydown="if(event.key==='Enter')findSong('${s.id}',this.value)"> <button class="ghost" onclick="findSong('${s.id}',this.previousElementSibling.value)">Find</button></div><div class="res" id="res-${s.id}"></div></td>
+      <td><input style="width:64px" value="${esc(c.start)}" onchange="setCfg('${s.id}',{start:this.value})"></td>
+      <td><input style="width:56px" value="${esc(c.playFor)}" placeholder="all" onchange="setCfg('${s.id}',{playFor:this.value})"></td>
+      <td><input style="width:56px" value="${c.timer || ''}" placeholder="none" onchange="setCfg('${s.id}',{timer:Number(this.value)||0})"></td>
+      <td><select onchange="setCfg('${s.id}',{auto:this.value==='a'})"><option value="a" ${c.auto ? 'selected' : ''}>by itself</option><option value="t" ${!c.auto ? 'selected' : ''}>press T</option></select></td>
+      <td><input type="checkbox" ${c.buzz ? 'checked' : ''} onchange="setCfg('${s.id}',{buzz:this.checked})"></td></tr>`;
+    if (s.type === 'mc') { const o = c.options || ['', '', '', ''];
+      h += `<tr><td></td><td colspan="7"><div class="muted" style="margin-bottom:4px">Answer options. Type the real next line in one box and funny wrong lines in the others, then pick the right letter. Set "Play for" to the second where the music should stop.</div>
+        ${['A', 'B', 'C', 'D'].map((l, k) => `<span style="display:inline-block;margin:0 10px 6px 0">${l}: <input style="width:230px" value="${esc(o[k] || '')}" onchange="setOpt('${s.id}',${k},this.value)"></span>`).join('')}
+        Right answer: <select onchange="setCfg('${s.id}',{correct:this.value})">${['A', 'B', 'C', 'D'].map(l => `<option ${c.correct === l ? 'selected' : ''}>${l}</option>`).join('')}</select></td></tr>`; }
+  });
+  h += `</table><h3>Backup</h3><button class="ghost" onclick="exportCfg()">Download backup</button> <label class="muted">Restore backup: <input type="file" accept=".json" onchange="importCfg(this.files[0])"></label>
+    <button class="ghost" onclick="if(confirm('Reset all songs and timers to the defaults?')){CFG={};S.set(QK('cfg'),CFG);drawEdit()}">Reset to defaults</button>`;
+  $('editIn').innerHTML = h;
+  const ds = $('devSel'); if (ds) ds.onchange = () => { SP.device = ds.value; S.set('device', ds.value); };
+  const v = $('vol'); if (v) v.onchange = () => { SP.volume = Math.max(5, Math.min(100, Number(v.value) || 80)); S.set('volume', SP.volume); };
+}
+async function findSong(id, q) {
+  q = (q || '').trim(); if (!q) return;
+  const m = q.match(/track[/:]([A-Za-z0-9]{22})/);
+  if (m) { setCfg(id, {song: 'spotify:track:' + m[1], songName: 'Song from link'}); try { const t = await SP.api('/tracks/' + m[1]); setCfg(id, {songName: t.name + ' – ' + t.artists.map(a => a.name).join(', ')}); } catch (e) {} return drawEdit(); }
+  if (!SP.connected()) return toast('Connect Spotify first (top of this page)');
+  try { const items = await SP.search(q); $('res-' + id).innerHTML = items.map(t => `<div onclick="pick('${id}','${t.uri}',this.textContent)">${esc(t.name)} – ${esc(t.artists.map(a => a.name).join(', '))}</div>`).join('') || '<span class="muted">Nothing found</span>'; }
+  catch (e) { toast('Search failed: ' + e.message); }
+}
+const REC = {team: undefined, rec: null, timer: null};
+async function toggleRec(i) {
+  if (REC.team === i) return REC.rec && REC.rec.stop();
+  if (REC.team !== undefined) return toast('Stop the other recording first');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    const chunks = [], rec = new MediaRecorder(stream);
+    REC.team = i; REC.rec = rec;
+    rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    rec.onstop = async () => {
+      clearTimeout(REC.timer); stream.getTracks().forEach(t => t.stop());
+      await saveSound(i, new Blob(chunks, {type: rec.mimeType || 'audio/webm'}));
+      REC.team = undefined; REC.rec = null; drawEdit(); ac(); teamSound(i);
+    };
+    rec.start(); REC.timer = setTimeout(() => rec.state === 'recording' && rec.stop(), 5000);
+    drawEdit();
+  } catch (e) { REC.team = undefined; toast('No microphone access. In Chrome, click the lock icon next to the address and allow the microphone.', 6000); }
+}
+async function saveSound(i, blob) {
+  if (!blob || blob.size < 500) return toast('That recording was empty, try again');
+  if (blob.size > 3e6) return toast('That file is too big. Keep it under 3 MB (a few seconds).');
+  await DB.put('team' + i, blob); if (CUSTOM[i]) URL.revokeObjectURL(CUSTOM[i]); CUSTOM[i] = URL.createObjectURL(blob);
+  TEAMS[i].sound = 'custom'; S.set('teams', TEAMS); toast(TEAMS[i].name + ' now has its own sound');
+}
+function uploadSound(i, f) { if (f) saveSound(i, f).then(drawEdit); }
+function setOpt(id, k, v) { const o = (cfg(SLIDES.find(s => s.id === id)).options || ['', '', '', '']).slice(); o[k] = v; setCfg(id, {options: o}); }
+function pick(id, uri, name) { setCfg(id, {song: uri, songName: name}); drawEdit(); }
+function clearSong(id) { setCfg(id, {song: '', songName: ''}); drawEdit(); }
+async function autoFill() {
+  let n = 0;
+  for (const s of SLIDES) { const c = cfg(s); if (!s.def.query || c.song) continue;
+    try { const it = await SP.search(s.def.query); if (it[0]) { setCfg(s.id, {song: it[0].uri, songName: it[0].name + ' – ' + it[0].artists.map(a => a.name).join(', ')}); n++; } } catch (e) {} }
+  toast(n + ' songs added. Check them in the list below.'); drawEdit();
+}
+function exportCfg() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({cfg: CFG, teams: TEAMS, volume: SP.volume}, null, 1)], {type: 'application/json'})); a.download = 'quiz-backup.json'; a.click(); }
+function importCfg(f) { if (!f) return; f.text().then(t => { const j = JSON.parse(t); CFG = j.cfg || {}; S.set(QK('cfg'), CFG); if (j.teams) { TEAMS = j.teams; S.set('teams', TEAMS); } toast('Backup restored'); drawEdit(); }).catch(() => toast('That file isn’t a quiz backup')); }
+
+/* ---------- start ---------- */
+(async () => {
+  const back = await SP.handleReturn();
+  idx = Math.min(S.get(back ? 'returnTo' : QK('idx'), 0), SLIDES.length - 1);
+  DATA.flags.forEach(f => { const im = new Image(); im.src = 'https://flagcdn.com/w640/' + f[0] + '.png'; });
+  loadCustom();
+  render(); B.armed = cfg(SLIDES[idx]).buzz; status();
+  if (back) openEdit();
+  ['Lilita One', 'Nunito'].forEach(f => document.fonts && document.fonts.load('20px "' + f + '"').then(render));
+})();
+</script>
+</body>
+</html>

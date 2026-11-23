@@ -110,6 +110,10 @@ const S = {
   set(k, v) { try { localStorage.setItem('pq_' + k, JSON.stringify(v)); } catch (e) {} }
 };
 const $ = id => document.getElementById(id);
+const FILE = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+const QUIZ = (!FILE || FILE === 'index') ? '' : FILE;          // '' = the main quiz
+const QK = k => QUIZ ? k + '__' + QUIZ : k;                       // per-quiz storage key
+const QUIZ_NAME = QUIZ ? QUIZ.replace(/-/g, ' ') : 'Main quiz';
 const C = {gold:'#FFC93C',coral:'#FF6B6B',teal:'#3DD6C8',pink:'#FF7EB9',lime:'#A6E35A',purple:'#B18CFF',orange:'#FF9A3C',lblue:'#5CC8F0',dust:'#B9C7BC',chalk:'#F6F2E6',dk:'#17302A'};
 const PARTY = [C.gold,C.coral,C.teal,C.pink,C.lime,C.purple,C.orange];
 const RC = [C.gold,C.pink,C.lime,C.teal,C.orange,C.coral,C.purple,C.lblue];
@@ -164,13 +168,20 @@ const R = {
   colours: d => confetti(30, EDGE) + header(d.label, d.color) + `<div class="abs h" style="left:5cqw;top:9cqw;font-size:4.6cqw">Know your colours</div>` + TEAMS.map((t, k) => { const pos = [[7,21],[37,21],[67,21],[22,38],[52,38]][k] || [7, 50]; return `<div class="abs" style="left:${pos[0]}cqw;top:${pos[1]}cqw;display:flex;align-items:center;gap:1.6cqw"><div style="width:9cqw;height:9cqw;border-radius:50%;background:${t.color};border:.3cqw solid ${C.chalk}"></div><div><div class="kicker" style="color:${t.color};font-size:1.6cqw;filter:brightness(1.4)">${esc(t.name).toUpperCase()}</div><div class="h" style="font-size:3cqw">${esc(DATA.wheel[k] ? DATA.wheel[k].cat : '')}</div></div></div>`; }).join(''),
   spin: d => confetti(30, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="abs h" style="left:18.5cqw;top:10cqw;font-size:5cqw">Spin the wheel!</div>` +
      [['ANSWER IT','±5','Right +5 · Wrong −5',C.lime],['DOUBLE IT','±10','Pass to that colour’s team',C.coral]].map((b, k) => `<div class="abs center" style="left:${18.5 + k * 30}cqw;top:22cqw;width:27cqw;height:21cqw;border:.35cqw solid ${b[3]};border-radius:2cqw;background:${C.dk};padding-top:2cqw"><div class="kicker" style="color:${b[3]};font-size:2.2cqw">${b[0]}</div><div class="h" style="font-size:7cqw">${b[1]}</div><div style="font-size:1.7cqw;color:${C.dust}">${b[2]}</div></div>`).join(''),
+  mc: d => { const c = cfg(SLIDES[idx]); const opts = c.options || ['', '', '', '']; const L = ['A', 'B', 'C', 'D'];
+    return confetti(14, EDGE) + header(d.label, d.color, d.n) + badge(d.i, d.color) + `<div class="abs h" style="left:18.5cqw;top:10.5cqw;font-size:3.6cqw">Which line comes next?</div>` +
+      `<div class="abs" style="left:18.5cqw;right:5cqw;top:19cqw;bottom:6cqw;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.6cqw">` +
+      L.map((l, k) => { const right = MC.revealed && c.correct === l, dim = MC.revealed && !right;
+        return `<div style="border:.35cqw solid ${right ? C.lime : PARTY[k]};background:${right ? 'rgba(166,227,90,.22)' : C.dk};border-radius:1.6cqw;padding:1.2cqw 1.8cqw;display:flex;align-items:center;gap:1.6cqw;opacity:${dim ? .3 : 1}">
+          <div class="h" style="flex:none;width:5cqw;height:5cqw;border-radius:50%;background:${right ? C.lime : PARTY[k]};color:${C.dk};display:flex;align-items:center;justify-content:center;font-size:3cqw">${l}</div>
+          <div class="h" style="font-size:${(opts[k] || '').length > 40 ? 2.2 : 2.8}cqw;line-height:1.15;color:${opts[k] ? C.chalk : C.dust}">${opts[k] ? esc(opts[k]) : '(type in edit mode)'}</div></div>`; }).join('') + `</div>`; },
   plain: d => (d.bunting ? bunting() : '') + confetti(d.conf || 80, WIDE.concat([[1,13,98,6]]), 1) + `<div class="mid"><div class="kicker" style="color:${d.color};font-size:2.6cqw">${esc(d.kicker)}</div><div class="big">${esc(d.title)}</div>${d.sub ? `<div class="sub">${esc(d.sub)}</div>` : ''}</div>`
 };
 
 /* ---------- build the deck ---------- */
 const SLIDES = [];
 function add(id, type, d, cfg) { SLIDES.push({id, type, d: d || {}, def: Object.assign({timer: 0, auto: true, buzz: false, buzzTime: 0, song: '', songName: '', start: '0:00', playFor: '', keepMusic: false}, cfg || {})}); }
-function scores(g, color, line) { add(`g${g}-end`, 'plain', {bunting: 1, kicker: `END OF GAME ${g}`, title: 'Scores on the board!', sub: line || 'Add up your points and tell the quizmaster', color}); }
+function scores(g, color, line) { add(`g${g}-end`, 'plain', {bunting: 1, kicker: g === 'B' ? 'END OF THE BONUS GAME' : `END OF GAME ${g}`, title: 'Scores on the board!', sub: line || 'Add up your points and tell the quizmaster', color}); }
 (function build() {
   const D = DATA;
   add('welcome', 'welcome');
@@ -234,6 +245,13 @@ function scores(g, color, line) { add(`g${g}-end`, 'plain', {bunting: 1, kicker:
   D.shows.forEach((s, i) => add(`g7-c${i + 1}`, 'listen', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`, kicker: `CLIP ${i + 1}`, title: 'What show am I?', sub: '30 seconds of music… then 30 seconds to decide'}, {timer: 60, playFor: '30', query: s[1] + ' ' + s[2]}));
   D.shows.forEach((s, i) => add(`g7-a${i + 1}`, 'a', {label: 'Game 7 · Answers', color: c, i: i + 1, n: `${i + 1} / 10`, q: 'Clip ' + (i + 1), lab: 'SHOW / FILM', a: s[0], extra: 'Song: “' + s[1] + '” by ' + s[2]}));
   scores(7, c, 'Show + song = 2 points per clip');
+  // Bonus game: multiple choice lyrics
+  c = C.pink; L = 'Bonus · Which Line Comes Next?';
+  add('b-title', 'title', {kicker: 'Bonus game', title: 'Which Line Comes Next?', sub: 'The music stops. Four options. Buzz in and pick the right line!', color: c});
+  add('b-rules', 'rules', {label: 'Bonus · How it works', color: c, title: 'A, B, C or D?', lines: ['The quizmaster plays a song, then the music stops', 'Four possible next lines appear on screen', 'First team to buzz picks A, B, C or D (10 seconds)', 'Right = 1 point. Wrong? The other teams can buzz in and steal it', 'Then the music plays on, and you hear who was right']});
+  ['Everybody Backstreet Boys', 'Mambo No. 5 Lou Bega', 'Barbie Girl Aqua', 'Macarena Los Del Rio', '99 Luftballons Nena', 'Atemlos durch die Nacht Helene Fischer', 'Don\'t Stop Me Now Queen', 'Uptown Funk Bruno Mars', 'Hey Jude Beatles', 'Rhythm Is a Dancer Snap'].forEach((q, i) =>
+    add(`b-s${i + 1}`, 'mc', {label: L, color: c, i: i + 1, n: `${i + 1} / 10`}, {buzz: true, buzzTime: 10, query: q, options: ['', '', '', ''], correct: 'A'}));
+  scores('B', c, '1 point per right answer');
   // Game 8
   c = RC[7]; L = 'Game 8 · ' + NAMES[7];
   add('g8-title', 'title', {kicker: 'Game 8', title: NAMES[7], sub: 'Spin the wheel. Answer it… or double it and give it to the next team!', color: c});
@@ -242,9 +260,10 @@ function scores(g, color, line) { add(`g${g}-end`, 'plain', {bunting: 1, kicker:
   for (let i = 1; i <= 10; i++) add(`g8-spin${i}`, 'spin', {label: 'Game 8 · Spin', color: c, i, n: `${i} / 10`}, {timer: 30, auto: false});
   add('final', 'plain', {bunting: 1, kicker: 'FINAL SCORES', title: 'And the winner is…', sub: 'Cheers for playing! See you at the next quiz.', color: C.gold, conf: 140});
 })();
-let CFG = S.get('cfg', {});
+let CFG = S.get(QK('cfg'), null);
+if (CFG === null) { CFG = QUIZ ? JSON.parse(JSON.stringify(S.get('cfg', {}))) : {}; S.set(QK('cfg'), CFG); }  // archive copy starts with the main quiz's settings
 const cfg = s => Object.assign({}, s.def, CFG[s.id] || {});
-function setCfg(id, patch) { CFG[id] = Object.assign({}, CFG[id] || {}, patch); S.set('cfg', CFG); }
+function setCfg(id, patch) { CFG[id] = Object.assign({}, CFG[id] || {}, patch); S.set(QK('cfg'), CFG); }
 
 /* ---------- sound ---------- */
 let AC = null;
@@ -281,7 +300,7 @@ function teamSound(i) {
 
 /* ---------- Spotify ---------- */
 const CLIENT_ID = '993e789b7b784ef6893e6dcac2892cd6';
-const REDIRECT = (location.origin + location.pathname).replace(/index\.html$/, '');
+const REDIRECT = location.hostname.endsWith('github.io') ? location.origin + '/quiz/' : (location.origin + location.pathname).replace(/index\.html$/, '');
 const SCOPES = 'user-read-playback-state user-modify-playback-state';
 const SP = {
   tok: S.get('sp', null), device: S.get('device', ''), volume: S.get('volume', 80), playing: false, stopTimer: null, err: '',
@@ -289,7 +308,7 @@ const SP = {
   async login() {
     const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     const v = b64(crypto.getRandomValues(new Uint8Array(48)));
-    S.set('verifier', v); S.set('returnTo', idx);
+    S.set('verifier', v); S.set('returnTo', idx); S.set('returnPage', location.href.split('?')[0]);
     const ch = b64(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
     location.href = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({response_type: 'code', client_id: CLIENT_ID, scope: SCOPES, code_challenge_method: 'S256', code_challenge: ch, redirect_uri: REDIRECT});
   },
@@ -305,6 +324,8 @@ const SP = {
     history.replaceState({}, '', REDIRECT);
     try { await this.tokenReq({grant_type: 'authorization_code', code: q.get('code'), redirect_uri: REDIRECT, code_verifier: S.get('verifier', '')}); toast('Spotify connected'); }
     catch (e) { toast('Spotify login failed: ' + e.message, 5000); }
+    const back = S.get('returnPage', ''); S.set('returnPage', '');
+    if (back && back !== REDIRECT && back.startsWith(location.origin)) { location.href = back; await new Promise(() => {}); }
     return true;
   },
   async access() {
@@ -395,6 +416,7 @@ const B = {order: [], armed: false, cd: null,
 
 /* ---------- navigation ---------- */
 let idx = 0;
+const MC = {revealed: false};
 function render() {
   const s = SLIDES[idx], c = cfg(s);
   seed = 7 + idx * 13;
@@ -404,9 +426,9 @@ function render() {
 }
 function go(n) {
   if (n < 0 || n >= SLIDES.length) return;
-  const prev = cfg(SLIDES[idx]); idx = n; S.set('idx', idx);
+  const prev = cfg(SLIDES[idx]); idx = n; S.set(QK('idx'), idx);
   const c = cfg(SLIDES[idx]);
-  B.reset(); B.armed = c.buzz; T.stop(); render();
+  B.reset(); B.armed = c.buzz; T.stop(); MC.revealed = false; render();
   if (c.song) SP.play(c.song, toMs(c.start), Number(c.playFor) || 0);
   else if ((SP.playing || prev.song) && !c.keepMusic) SP.pause();
   if (c.timer && c.auto) T.start(c.timer);
@@ -415,7 +437,7 @@ function go(n) {
 function toMs(s) { const m = String(s || '').trim().match(/^(\d+):(\d{1,2})$/); if (m) return (+m[1] * 60 + +m[2]) * 1000; const n = Number(s); return isNaN(n) ? 0 : n * 1000; }
 function status() {
   const s = SLIDES[idx], c = cfg(s);
-  $('status').textContent = `${idx + 1}/${SLIDES.length} · ${s.id}` + (B.armed ? ' · buzzers ON' : '') + (c.song ? ' · ♪ ' + (c.songName || 'song') : '') + (c.timer && !c.auto && !T.h ? ' · press T for timer' : '') + (SP.connected() ? '' : ' · Spotify not connected (E)') + (SP.err ? ' · ⚠ ' + SP.err : '') + ' · H hides this';
+  $('status').textContent = (QUIZ ? QUIZ_NAME + ' · ' : '') + `${idx + 1}/${SLIDES.length} · ${s.id}` + (B.armed ? ' · buzzers ON' : '') + (c.song ? ' · ♪ music on this slide' : '') + (c.timer && !c.auto && !T.h ? ' · press T for timer' : '') + (SP.connected() ? '' : ' · Spotify not connected (E)') + (SP.err ? ' · ⚠ ' + SP.err : '') + ' · H hides this';
 }
 document.addEventListener('keydown', e => {
   if ($('edit').style.display === 'block') { if (e.key === 'Escape' && !e.target.matches('input')) closeEdit(); if (B.learn !== undefined) learnKey(e); return; }
@@ -433,6 +455,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'f' || k === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
   else if (k === 'h' || k === 'H') $('status').classList.toggle('off');
   else if (k === 'e' || k === 'E') openEdit();
+  else if ((k === 'r' || k === 'R') && SLIDES[idx].type === 'mc') { MC.revealed = !MC.revealed; render(); if (MC.revealed && SP.connected()) SP.api('/me/player/play' + SP.dev('?'), {method: 'PUT'}).then(() => { SP.playing = true; status(); }).catch(() => {}); }
   else if (k === 'Home') go(0);
 });
 let mouseT; document.addEventListener('mousemove', () => { document.body.classList.remove('hidecursor'); clearTimeout(mouseT); mouseT = setTimeout(() => document.body.classList.add('hidecursor'), 2500); });
@@ -441,10 +464,10 @@ let mouseT; document.addEventListener('mousemove', () => { document.body.classLi
 function openEdit() { $('edit').style.display = 'block'; drawEdit(); }
 function closeEdit() { $('edit').style.display = 'none'; B.learn = undefined; render(); status(); }
 function learnKey(e) { if (e.key === 'Escape') { B.learn = undefined; drawEdit(); return; } e.preventDefault(); TEAMS[B.learn].key = e.key; S.set('teams', TEAMS); toast(TEAMS[B.learn].name + ' = key "' + e.key + '"'); B.learn = undefined; drawEdit(); }
-function sectionOf(id) { const m = id.match(/^g(\d)/); return m ? 'Game ' + m[1] + ' · ' + NAMES[m[1] - 1] : 'Intro & breaks'; }
+function sectionOf(id) { if (/^(b-|gB)/.test(id)) return 'Bonus · Which Line Comes Next?'; const m = id.match(/^g(\d)/); return m ? 'Game ' + m[1] + ' · ' + NAMES[m[1] - 1] : 'Intro & breaks'; }
 function slideLabel(s) { const d = s.d; return d.title && s.type !== 'q' ? (d.kicker ? d.kicker + ' · ' : '') + d.title : d.text || d.country || d.letter || s.id; }
 async function drawEdit() {
-  let h = `<button class="close ghost" onclick="closeEdit()">Close (Esc)</button><h1>Edit mode</h1><div class="muted">Songs, timers and buzzers per slide. Everything saves by itself on this laptop.</div>`;
+  let h = `<button class="close ghost" onclick="closeEdit()">Close (Esc)</button><h1>Edit mode</h1><div class="muted">Songs, timers and buzzers per slide. Everything saves by itself on this laptop.</div><div style="margin-top:6px">This quiz: <b>${esc(QUIZ_NAME)}</b> <span class="muted">${QUIZ ? '(archived copy, its own songs and settings)' : '(the main quiz at vesoma-quiz.github.io/quiz/)'}</span></div>`;
   h += `<h3>Spotify</h3>`;
   if (SP.connected()) {
     let devs = []; try { devs = await SP.devices(); } catch (e) {}
@@ -452,7 +475,7 @@ async function drawEdit() {
     h += `<span style="color:#A6E35A">✓ Connected</span> &nbsp; Play music on: <select id="devSel">${devs.map(d => `<option value="${d.id}" ${d.id === SP.device ? 'selected' : ''}>${esc(d.name)} (${d.type})</option>`).join('') || '<option>Open Spotify on the MacBook, then reopen edit mode</option>'}</select>
       &nbsp; Music volume <input id="vol" type="number" min="5" max="100" value="${SP.volume}" style="width:70px">%
       &nbsp;<button class="ghost" onclick="SP.toggle()">Test play/pause</button>
-      <div style="margin-top:8px"><button class="g" onclick="autoFill()">Auto-fill Game 2 and Game 7 songs</button> <span class="muted">Finds the quiz songs on Spotify for every empty song slot.</span></div>`;
+      <div style="margin-top:8px"><button class="g" onclick="autoFill()">Auto-fill quiz songs</button> <span class="muted">Finds the songs for Game 2, Game 7 and the bonus game on Spotify, for every empty song slot.</span></div>`;
   } else h += `<button class="g" onclick="SP.login()">Connect Spotify</button> <span class="muted">Log in with your Premium account. You only do this once.</span>`;
   h += `<h3>Teams, buzzer keys and sounds</h3><table style="width:auto">${TEAMS.map((t, i) => `<tr><td><span class="team" style="margin:0"><span class="dot" style="background:${t.color}"></span><b>${esc(t.name)}</b></span></td>
     <td>${B.learn === i ? '<b style="color:#FFC93C">Press the buzzer now…</b>' : 'Key "' + esc(t.key) + '"'} <button class="ghost" onclick="B.learn=${i};drawEdit()">Change</button></td>
@@ -461,7 +484,7 @@ async function drawEdit() {
       <label class="ghost" style="cursor:pointer;border:1px solid #B9C7BC;border-radius:8px;padding:7px 12px;font-family:'Lilita One'">Upload file<input type="file" accept="audio/*" style="display:none" onchange="uploadSound(${i},this.files[0])"></label>
       <button class="ghost" onclick="ac();teamSound(${i})">▶ Test</button></td></tr>`).join('')}</table>
     <div class="muted">To link a CompuPhase button: click Change next to the team, then press that team’s button. To record: click Record, say your line (max 5 seconds), click Stop. The first time, Chrome asks to use the microphone: click Allow.</div>`;
-  h += `<h3>Keys during the quiz</h3><div class="keys muted"><span>→ / ← next / back</span><span>Space reset buzzers</span><span>P pause / play music</span><span>T start timer</span><span>Z buzzers on/off</span><span>F full screen</span><span>H host info line</span><span>E edit mode</span></div>`;
+  h += `<h3>Keys during the quiz</h3><div class="keys muted"><span>→ / ← next / back</span><span>Space reset buzzers</span><span>P pause / play music</span><span>T start timer</span><span>Z buzzers on/off</span><span>R reveal the right answer (bonus game)</span><span>F full screen</span><span>H host info line</span><span>E edit mode</span></div>`;
   h += `<h3>Slides</h3><table><tr><th>#</th><th>Slide</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Timer (s)</th><th>Timer starts</th><th>Buzzers</th></tr>`;
   let sec = '';
   SLIDES.forEach((s, i) => {
@@ -475,9 +498,13 @@ async function drawEdit() {
       <td><input style="width:56px" value="${c.timer || ''}" placeholder="none" onchange="setCfg('${s.id}',{timer:Number(this.value)||0})"></td>
       <td><select onchange="setCfg('${s.id}',{auto:this.value==='a'})"><option value="a" ${c.auto ? 'selected' : ''}>by itself</option><option value="t" ${!c.auto ? 'selected' : ''}>press T</option></select></td>
       <td><input type="checkbox" ${c.buzz ? 'checked' : ''} onchange="setCfg('${s.id}',{buzz:this.checked})"></td></tr>`;
+    if (s.type === 'mc') { const o = c.options || ['', '', '', ''];
+      h += `<tr><td></td><td colspan="7"><div class="muted" style="margin-bottom:4px">Answer options. Type the real next line in one box and funny wrong lines in the others, then pick the right letter. Set "Play for" to the second where the music should stop.</div>
+        ${['A', 'B', 'C', 'D'].map((l, k) => `<span style="display:inline-block;margin:0 10px 6px 0">${l}: <input style="width:230px" value="${esc(o[k] || '')}" onchange="setOpt('${s.id}',${k},this.value)"></span>`).join('')}
+        Right answer: <select onchange="setCfg('${s.id}',{correct:this.value})">${['A', 'B', 'C', 'D'].map(l => `<option ${c.correct === l ? 'selected' : ''}>${l}</option>`).join('')}</select></td></tr>`; }
   });
   h += `</table><h3>Backup</h3><button class="ghost" onclick="exportCfg()">Download backup</button> <label class="muted">Restore backup: <input type="file" accept=".json" onchange="importCfg(this.files[0])"></label>
-    <button class="ghost" onclick="if(confirm('Reset all songs and timers to the defaults?')){CFG={};S.set('cfg',CFG);drawEdit()}">Reset to defaults</button>`;
+    <button class="ghost" onclick="if(confirm('Reset all songs and timers to the defaults?')){CFG={};S.set(QK('cfg'),CFG);drawEdit()}">Reset to defaults</button>`;
   $('editIn').innerHTML = h;
   const ds = $('devSel'); if (ds) ds.onchange = () => { SP.device = ds.value; S.set('device', ds.value); };
   const v = $('vol'); if (v) v.onchange = () => { SP.volume = Math.max(5, Math.min(100, Number(v.value) || 80)); S.set('volume', SP.volume); };
@@ -515,6 +542,7 @@ async function saveSound(i, blob) {
   TEAMS[i].sound = 'custom'; S.set('teams', TEAMS); toast(TEAMS[i].name + ' now has its own sound');
 }
 function uploadSound(i, f) { if (f) saveSound(i, f).then(drawEdit); }
+function setOpt(id, k, v) { const o = (cfg(SLIDES.find(s => s.id === id)).options || ['', '', '', '']).slice(); o[k] = v; setCfg(id, {options: o}); }
 function pick(id, uri, name) { setCfg(id, {song: uri, songName: name}); drawEdit(); }
 function clearSong(id) { setCfg(id, {song: '', songName: ''}); drawEdit(); }
 async function autoFill() {
@@ -524,12 +552,12 @@ async function autoFill() {
   toast(n + ' songs added. Check them in the list below.'); drawEdit();
 }
 function exportCfg() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({cfg: CFG, teams: TEAMS, volume: SP.volume}, null, 1)], {type: 'application/json'})); a.download = 'quiz-backup.json'; a.click(); }
-function importCfg(f) { if (!f) return; f.text().then(t => { const j = JSON.parse(t); CFG = j.cfg || {}; S.set('cfg', CFG); if (j.teams) { TEAMS = j.teams; S.set('teams', TEAMS); } toast('Backup restored'); drawEdit(); }).catch(() => toast('That file isn’t a quiz backup')); }
+function importCfg(f) { if (!f) return; f.text().then(t => { const j = JSON.parse(t); CFG = j.cfg || {}; S.set(QK('cfg'), CFG); if (j.teams) { TEAMS = j.teams; S.set('teams', TEAMS); } toast('Backup restored'); drawEdit(); }).catch(() => toast('That file isn’t a quiz backup')); }
 
 /* ---------- start ---------- */
 (async () => {
   const back = await SP.handleReturn();
-  idx = Math.min(S.get(back ? 'returnTo' : 'idx', 0), SLIDES.length - 1);
+  idx = Math.min(S.get(back ? 'returnTo' : QK('idx'), 0), SLIDES.length - 1);
   DATA.flags.forEach(f => { const im = new Image(); im.src = 'https://flagcdn.com/w640/' + f[0] + '.png'; });
   loadCustom();
   render(); B.armed = cfg(SLIDES[idx]).buzz; status();
