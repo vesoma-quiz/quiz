@@ -113,7 +113,26 @@ const $ = id => document.getElementById(id);
 const FILE = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
 const QUIZ = (!FILE || FILE === 'index') ? '' : FILE;          // '' = the main quiz
 const QK = k => QUIZ ? k + '__' + QUIZ : k;                       // per-quiz storage key
-const QUIZ_NAME = QUIZ ? QUIZ.replace(/-/g, ' ') : 'Main quiz';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function prettyQuiz(f) {
+  if (!f) return 'Main quiz (current)';
+  const m = f.match(/^(\d{4})-(\d{2})-(\d{2})-?(.*)$/);
+  const rest = (m ? m[4] : f).replace(/-/g, ' ').replace(/\bpub quiz (\d+)/i, 'Pub Quiz #$1').trim();
+  const t = rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : 'Quiz';
+  return m ? `${+m[3]} ${MON[+m[2] - 1]} ${m[1]} · ${t}` : t;
+}
+const QUIZ_NAME = prettyQuiz(QUIZ);
+const BASE = location.hostname.endsWith('github.io') ? '/quiz/' : location.pathname.replace(/[^/]*$/, '');
+async function quizList() {
+  let list = S.get('quizList', []);
+  try {
+    const r = await fetch('https://api.github.com/repos/vesoma-quiz/quiz/contents/', { cache: 'no-store' });
+    if (r.ok) { list = (await r.json()).map(f => f.name).filter(n => /\.html$/.test(n) && n !== 'index.html').map(n => n.replace(/\.html$/, '')).sort().reverse(); S.set('quizList', list); }
+  } catch (e) {}
+  if (QUIZ && !list.includes(QUIZ)) list.unshift(QUIZ);
+  return list;
+}
+function goQuiz(f) { location.href = BASE + (f ? f + '.html' : ''); }
 const C = {gold:'#FFC93C',coral:'#FF6B6B',teal:'#3DD6C8',pink:'#FF7EB9',lime:'#A6E35A',purple:'#B18CFF',orange:'#FF9A3C',lblue:'#5CC8F0',dust:'#B9C7BC',chalk:'#F6F2E6',dk:'#17302A'};
 const PARTY = [C.gold,C.coral,C.teal,C.pink,C.lime,C.purple,C.orange];
 const RC = [C.gold,C.pink,C.lime,C.teal,C.orange,C.coral,C.purple,C.lblue];
@@ -467,7 +486,7 @@ function learnKey(e) { if (e.key === 'Escape') { B.learn = undefined; drawEdit()
 function sectionOf(id) { if (/^(b-|gB)/.test(id)) return 'Bonus · Which Line Comes Next?'; const m = id.match(/^g(\d)/); return m ? 'Game ' + m[1] + ' · ' + NAMES[m[1] - 1] : 'Intro & breaks'; }
 function slideLabel(s) { const d = s.d; return d.title && s.type !== 'q' ? (d.kicker ? d.kicker + ' · ' : '') + d.title : d.text || d.country || d.letter || s.id; }
 async function drawEdit() {
-  let h = `<button class="close ghost" onclick="closeEdit()">Close (Esc)</button><h1>Edit mode</h1><div class="muted">Songs, timers and buzzers per slide. Everything saves by itself on this laptop.</div><div style="margin-top:6px">This quiz: <b>${esc(QUIZ_NAME)}</b> <span class="muted">${QUIZ ? '(archived copy, its own songs and settings)' : '(the main quiz at vesoma-quiz.github.io/quiz/)'}</span></div>`;
+  let h = `<button class="close ghost" onclick="closeEdit()">Close (Esc)</button><h1>Edit mode</h1><div class="muted">Songs, timers and buzzers per slide. Everything saves by itself on this laptop.</div><div style="margin-top:8px">Quiz: <select id="quizSel" onchange="goQuiz(this.value)"><option value="" ${QUIZ ? '' : 'selected'}>${esc(prettyQuiz(''))}</option>${(await quizList()).map(f => `<option value="${esc(f)}" ${f === QUIZ ? 'selected' : ''}>${esc(prettyQuiz(f))}</option>`).join('')}</select> <span class="muted">${QUIZ ? 'Saved quiz: its own songs and settings.' : 'Pick a previous quiz night to open it.'}</span></div>`;
   h += `<h3>Spotify</h3>`;
   if (SP.connected()) {
     let devs = []; try { devs = await SP.devices(); } catch (e) {}
