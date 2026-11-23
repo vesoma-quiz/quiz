@@ -428,7 +428,8 @@ document.addEventListener('keydown', e => {
   else if (k === ' ') { e.preventDefault(); B.reset(); }
   else if (k === 'p' || k === 'P') SP.toggle();
   else if (k === 't' || k === 'T') { const c = cfg(SLIDES[idx]); T.start(c.timer || 60); }
-  else if (k === 'b' || k === 'B') { B.armed = !B.armed; toast(B.armed ? 'Buzzers ON' : 'Buzzers OFF'); status(); }
+  else if (k === 'z' || k === 'Z') { B.armed = !B.armed; toast(B.armed ? 'Buzzers ON' : 'Buzzers OFF'); status(); }
+  else if (k === 'F5' || k === 'b' || k === 'B' || k === '.' || k === 'Escape') { e.preventDefault(); } // presenter extra buttons (start show, black screen): ignored on purpose
   else if (k === 'f' || k === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
   else if (k === 'h' || k === 'H') $('status').classList.toggle('off');
   else if (k === 'e' || k === 'E') openEdit();
@@ -460,7 +461,7 @@ async function drawEdit() {
       <label class="ghost" style="cursor:pointer;border:1px solid #B9C7BC;border-radius:8px;padding:7px 12px;font-family:'Lilita One'">Upload file<input type="file" accept="audio/*" style="display:none" onchange="uploadSound(${i},this.files[0])"></label>
       <button class="ghost" onclick="ac();teamSound(${i})">▶ Test</button></td></tr>`).join('')}</table>
     <div class="muted">To link a CompuPhase button: click Change next to the team, then press that team’s button. To record: click Record, say your line (max 5 seconds), click Stop. The first time, Chrome asks to use the microphone: click Allow.</div>`;
-  h += `<h3>Keys during the quiz</h3><div class="keys muted"><span>→ / ← next / back</span><span>Space reset buzzers</span><span>P pause / play music</span><span>T start timer</span><span>B buzzers on/off</span><span>F full screen</span><span>H host info line</span><span>E edit mode</span></div>`;
+  h += `<h3>Keys during the quiz</h3><div class="keys muted"><span>→ / ← next / back</span><span>Space reset buzzers</span><span>P pause / play music</span><span>T start timer</span><span>Z buzzers on/off</span><span>F full screen</span><span>H host info line</span><span>E edit mode</span></div>`;
   h += `<h3>Slides</h3><table><tr><th>#</th><th>Slide</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Timer (s)</th><th>Timer starts</th><th>Buzzers</th></tr>`;
   let sec = '';
   SLIDES.forEach((s, i) => {
