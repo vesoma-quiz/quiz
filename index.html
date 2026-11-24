@@ -89,6 +89,7 @@ body.hidecursor{cursor:none}
 #edit .team{display:inline-flex;align-items:center;gap:8px;margin:4px 16px 4px 0}
 #edit .dot{width:18px;height:18px;border-radius:50%;display:inline-block;border:2px solid #000}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0b1c16;border:1px solid var(--dust);color:var(--chalk);padding:10px 16px;border-radius:10px;z-index:200;display:none;font-size:15px}
+.jump{cursor:pointer}.jump:hover{color:#FFC93C;text-decoration:underline}tr.cur td{background:rgba(255,201,60,.08)}.here{color:#FFC93C;font-size:12px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -481,6 +482,7 @@ let mouseT; document.addEventListener('mousemove', () => { document.body.classLi
 
 /* ---------- edit mode ---------- */
 function openEdit() { $('edit').style.display = 'block'; drawEdit(); }
+function jumpTo(i) { closeEdit(); if (i !== idx) go(i); }
 function closeEdit() { $('edit').style.display = 'none'; B.learn = undefined; render(); status(); }
 function learnKey(e) { if (e.key === 'Escape') { B.learn = undefined; drawEdit(); return; } e.preventDefault(); TEAMS[B.learn].key = e.key; S.set('teams', TEAMS); toast(TEAMS[B.learn].name + ' = key "' + e.key + '"'); B.learn = undefined; drawEdit(); }
 function sectionOf(id) { if (/^(b-|gB)/.test(id)) return 'Bonus · Which Line Comes Next?'; const m = id.match(/^g(\d)/); return m ? 'Game ' + m[1] + ' · ' + NAMES[m[1] - 1] : 'Intro & breaks'; }
@@ -509,7 +511,7 @@ async function drawEdit() {
   SLIDES.forEach((s, i) => {
     const c = cfg(s), se = sectionOf(s.id);
     if (se !== sec) { sec = se; h += `<tr class="sec"><td colspan="8">${esc(se)}</td></tr>`; }
-    h += `<tr><td class="muted">${i + 1}</td><td style="max-width:260px">${esc(slideLabel(s))}<div class="muted" style="font-size:11px">${s.id}</div></td>
+    h += `<tr${i === idx ? ' class="cur"' : ''}><td class="jump muted" onclick="jumpTo(${i})" title="Go to this slide">${i + 1}</td><td class="jump" style="max-width:260px" onclick="jumpTo(${i})" title="Go to this slide">${esc(slideLabel(s))}${i === idx ? ' <span class="here">◀ you are here</span>' : ''}<div class="muted" style="font-size:11px">${s.id}</div></td>
       <td style="min-width:260px">${c.song ? `<div class="song">♪ ${esc(c.songName || c.song)}</div><button class="ghost" onclick="clearSong('${s.id}')">Remove</button>` : ''}
         <div><input placeholder="Search Spotify or paste song link" style="width:240px" onkeydown="if(event.key==='Enter')findSong('${s.id}',this.value)"> <button class="ghost" onclick="findSong('${s.id}',this.previousElementSibling.value)">Find</button></div><div class="res" id="res-${s.id}"></div></td>
       <td><input style="width:64px" value="${esc(c.start)}" onchange="setCfg('${s.id}',{start:this.value})"></td>
