@@ -421,9 +421,10 @@ function wrong() {
   const i = G.buzz, p = pts(); ST.scores[i] -= p; saveST(); G.locked.push(i); G.buzz = null; $('buzz').style.display = 'none';
   SND.end(); toast('Team ' + TEAMS[i].name + ' −' + p);
   if (G.dd || G.locked.length >= TEAMS.length) return reveal();
-  resume(); render();
+  replay(); render();
 }
 function resume() { if (!SP.connected() || !tc(G.c, G.r).song) return; SP.api('/me/player/play' + SP.dev('?'), {method: 'PUT'}).then(() => { SP.playing = true; render(); }).catch(() => {}); }
+function replay() { const t = tc(G.c, G.r); if (!t.song || !SP.connected()) return; if (!Number(t.playFor)) return resume(); SP.play(t.song, toMs(t.start), Number(t.playFor)).then(render); }
 function reveal() { ST.used[G.c + '-' + G.r] = true; saveST(); G.screen = 'answer'; $('buzz').style.display = 'none'; render(); resume(); }
 function toBoard() { $('buzz').style.display = 'none'; if (SP.playing) SP.pause(); G = {screen: left() ? 'board' : 'final'}; if (G.screen === 'final') PRESETS.fanfare.play(); render(); }
 function adj(i, d) { ST.scores[i] += d; saveST(); render(); }
@@ -446,7 +447,7 @@ document.addEventListener('keydown', e => {
     else if (G.screen === 'board' && !left()) toBoard();
   }
   else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); if (G.screen !== 'board') toBoard(); }
-  else if (k === ' ') { e.preventDefault(); if (G.buzz != null && !G.dd) { G.buzz = null; $('buzz').style.display = 'none'; resume(); } }
+  else if (k === ' ') { e.preventDefault(); if (G.buzz != null && !G.dd) { G.buzz = null; $('buzz').style.display = 'none'; replay(); } }
   else if (K === 'p') SP.toggle().then(render);
   else if (K === 'w') { G = {screen: 'final'}; PRESETS.fanfare.play(); render(); }
   else if (K === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
@@ -479,10 +480,10 @@ async function drawEdit() {
     <td>Score: <input type="number" step="100" style="width:90px" value="${ST.scores[i]}" onchange="ST.scores[${i}]=Number(this.value)||0;saveST()"></td></tr>`).join('')}</table>
     <div class="muted">Team sounds and recordings are the same as in the pub quiz (record new ones there).</div>
     <div style="margin-top:8px"><button onclick="if(confirm('Start a new game? All scores go to 0 and every square opens again.')){ST={used:{},scores:TEAMS.map(()=>0)};saveST();drawEdit()}">New game (reset scores and board)</button></div>`;
-  h += `<h3>Keys during the game</h3><div class="keys muted"><span>Click a square to open it</span><span>1–5 buzzers</span><span>Y right (adds points)</span><span>N wrong (takes points, others can buzz)</span><span>→ show answer / back to board</span><span>← back to board (square stays open)</span><span>Space cancel a buzz</span><span>Daily Double: click the team (or it buzzes), type the bet, Enter</span><span>P pause / play music</span><span>W final scores</span><span>F full screen</span><span>E edit mode</span></div>
+  h += `<h3>Keys during the game</h3><div class="keys muted"><span>Click a square to open it</span><span>1–5 buzzers</span><span>Y right (adds points)</span><span>N wrong (takes points, the clip plays again from the start, others can buzz)</span><span>→ show answer / back to board</span><span>← back to board (square stays open)</span><span>Space cancel a buzz</span><span>Daily Double: click the team (or it buzzes), type the bet, Enter</span><span>P pause / play music</span><span>W final scores</span><span>F full screen</span><span>E edit mode</span></div>
     <div class="muted" style="margin-top:6px">To fix a score on the board: move the mouse over a team's score and click − or +.</div>`;
   h += `<h3>The board</h3><div class="muted" style="margin-bottom:8px">Title on the board: <input style="width:320px" value="${esc(CFG.title || DATA.title)}" onchange="CFG.title=this.value;S.set(QK('jcfg'),CFG)"></div>
-    <table><tr><th>Points</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Answer (big)</th><th>Small line under it</th><th>Daily Double</th><th>Played</th></tr>`;
+    <table><tr><th>Points</th><th>Song</th><th>Start music from<br><span style="font-weight:400">(e.g. 10 or 1:05)</span></th><th>Play for (s)</th><th>Answer (big)</th><th>Small line under it</th><th>Daily Double</th><th>Played</th></tr>`;
   for (let c = 0; c < NC; c++) {
     const k = cc(c);
     h += `<tr class="sec"><td colspan="8"><span style="color:${DATA.cats[c].color}">■</span> Category: <input style="width:220px" value="${esc(k.name)}" onchange="setCfg('c${c}',{name:this.value})"> &nbsp; Task on screen: <input style="width:420px" value="${esc(k.task)}" onchange="setCfg('c${c}',{task:this.value})"></td></tr>`;
@@ -501,7 +502,7 @@ async function drawEdit() {
         <tr><td></td><td colspan="7" style="padding-top:0">The right line (shows big on the answer slide, after Y or →): <input style="width:560px" placeholder="optional – type the line they have to sing" value="${esc(t.clue || '')}" onchange="setTile(${c},${r},{clue:this.value})"></td></tr>`;
     }
   }
-  h += `</table><div class="muted" style="margin-top:6px">"The right line" stays hidden while the song plays and shows big on the answer slide, with the song name under it. Finish the Line: click ▶ Listen next to the song, then click ⏹ Stop here right before the line they should sing. The game remembers that moment by itself (you see it under "Play for"). Click ▶ Test the clip to check it. "Small line under it" can hold the real line if you want it on screen (you type it).</div>
+  h += `</table><div class="muted" style="margin-top:6px">"The right line" stays hidden while the song plays and shows big on the answer slide, with the song name under it. "Start music from": type a time like 10 (seconds) or 1:05 to skip the start of a song. Then: click ▶ Listen next to the song, then click ⏹ Stop here right before the line they should sing. The game remembers that moment by itself (you see it under "Play for"). Click ▶ Test the clip to check it. "Small line under it" can hold the real line if you want it on screen (you type it).</div>
     <div style="margin-top:14px"><button class="ghost" onclick="if(confirm('Put all songs, answers and categories back to the original?')){CFG={};S.set(QK('jcfg'),CFG);drawEdit()}">Reset board to the original</button></div>`;
   $('editIn').innerHTML = h;
   const ds = $('devSel'); if (ds) ds.onchange = () => { SP.device = ds.value; S.set('device', ds.value); };
