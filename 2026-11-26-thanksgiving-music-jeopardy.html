@@ -114,6 +114,9 @@ body.hidecursor{cursor:none}
 .dd{display:inline-block;background:var(--gold);color:var(--board-dk);font-family:'Lilita One';font-size:2.4cqw;padding:.5cqw 2cqw;border-radius:1cqw;margin-bottom:1.4cqw;transform:rotate(-2deg)}
 .chip{display:inline-flex;align-items:center;gap:1cqw;font-family:'Lilita One';font-size:2.6cqw;padding:.8cqw 2.4cqw;border-radius:5cqw;margin-top:2.4cqw}
 .hint{position:absolute;left:0;right:0;bottom:2cqw;text-align:center;font-size:1.5cqw;color:var(--dust)}
+.ddteams{display:flex;gap:1.4cqw;margin-top:2.6cqw}.ddteams div{font-family:'Lilita One';font-size:2.2cqw;padding:1.2cqw 2.2cqw;border-radius:1.2cqw;cursor:pointer;border:.3cqw solid transparent}.ddteams div:hover{border-color:var(--chalk)}
+.wager{font-family:'Lilita One';font-size:5cqw;width:22cqw;text-align:center;background:var(--board-dk);color:var(--gold);border:.35cqw solid var(--gold);border-radius:1.4cqw;padding:.6cqw;margin-top:2cqw;outline:none}
+.gobtn{font-family:'Lilita One';font-size:2.2cqw;background:var(--gold);color:var(--board-dk);border:0;border-radius:1.2cqw;padding:1cqw 3cqw;margin-top:2cqw;cursor:pointer}
 .podium{display:flex;flex-direction:column;gap:1cqw;margin-top:2.6cqw;width:60cqw}
 .podium div{display:flex;justify-content:space-between;align-items:center;border-radius:1.2cqw;padding:1cqw 2.4cqw;font-family:'Lilita One';font-size:2.8cqw}
 #edit tr.cat td{background:#1a3a30}
@@ -350,16 +353,24 @@ const SCR = {
     return h + '</div>' + scoresBar();
   },
   clue() {
-    const k = DATA.cats[G.c], t = tc(G.c, G.r), pts = VAL(G.r) * (t.dbl ? 2 : 1);
-    return confetti(16, EDGE) + header(cc(G.c).name, k.color, pts + ' points') + `<div class="mid">${t.dbl ? '<div class="dd">DOUBLE POINTS!</div>' : ''}<div class="big" style="font-size:5.4cqw">${esc(cc(G.c).task)}</div>
+    const k = DATA.cats[G.c], t = tc(G.c, G.r), pts = VAL(G.r);
+    const dd = G.dd ? `<div class="dd">DAILY DOUBLE · Team ${esc(TEAMS[G.ddTeam].name)} bets ${G.wager}</div>` : '';
+    return confetti(16, EDGE) + header(cc(G.c).name, k.color, G.dd ? 'Daily Double' : pts + ' points') + `<div class="mid">${dd}<div class="big" style="font-size:5.4cqw">${esc(cc(G.c).task)}</div>
       <div class="eq ${SP.playing ? '' : 'off'}">${[0, .3, .15, .45, .05, .35, .2].map((d, i) => `<i style="background:${PARTY[i]};animation-delay:-${d}s"></i>`).join('')}</div>
-      <div class="sub" style="margin-top:0">${G.locked.length ? 'Out this round: ' + G.locked.map(i => TEAMS[i].name).join(', ') : 'Buzz in when you know it!'}</div></div>`;
+      <div class="sub" style="margin-top:0">${G.dd ? 'Only Team ' + esc(TEAMS[G.ddTeam].name) + ' answers this one!' : G.locked.length ? 'Out this round: ' + G.locked.map(i => TEAMS[i].name).join(', ') : 'Buzz in when you know it!'}</div></div>`;
   },
   answer() {
     const k = DATA.cats[G.c], t = tc(G.c, G.r);
-    return confetti(40, WIDE) + header(cc(G.c).name, k.color, VAL(G.r) * (t.dbl ? 2 : 1) + ' points') + `<div class="mid"><div class="kicker" style="color:${C.dust};font-size:2.4cqw">THE ANSWER</div>
+    return confetti(40, WIDE) + header(cc(G.c).name, k.color, G.dd ? 'Daily Double' : VAL(G.r) + ' points') + `<div class="mid"><div class="kicker" style="color:${C.dust};font-size:2.4cqw">THE ANSWER</div>
       <div class="big" style="color:${k.color};font-size:${String(t.ans).length > 26 ? 5 : 7}cqw">${esc(t.ans || '(type the answer in edit mode)')}</div>${t.sub ? `<div class="sub" style="color:${C.chalk};font-size:2.8cqw">${esc(t.sub)}</div>` : ''}${t.note ? `<div class="sub">${esc(t.note)}</div>` : ''}
       ${G.winner ? `<div class="chip" style="background:${TEAMS[G.winner.t].color};color:${txtColor(TEAMS[G.winner.t].color)}">+${G.winner.pts} · Team ${esc(TEAMS[G.winner.t].name)}</div>` : ''}</div><div class="hint">→ back to the board</div>`;
+  },
+  dd() {
+    const k = DATA.cats[G.c];
+    let h = bunting() + confetti(90, WIDE.concat([[1, 13, 98, 8]]), 1) + `<div class="mid" style="padding-top:5cqw"><div class="kicker" style="color:${k.color};font-size:2.4cqw">${esc(cc(G.c).name).toUpperCase()} · ${VAL(G.r)}</div><div class="big" style="color:${C.gold}">DAILY DOUBLE!</div>`;
+    if (G.ddTeam == null) h += `<div class="sub">Which team picked this square? (click it, or that team presses its buzzer)</div><div class="ddteams">${TEAMS.map((t, i) => `<div style="background:${t.color};color:${txtColor(t.color)}" onclick="ddPick(${i})">${esc(t.name)}</div>`).join('')}</div>`;
+    else h += `<div class="sub" style="color:${C.chalk}">Team ${esc(TEAMS[G.ddTeam].name)}, how many points do you bet?</div><div class="sub" style="margin-top:.6cqw">You can bet up to ${ddMax()}. Right = win it, wrong = lose it.</div><input id="wager" class="wager" type="number" min="0" max="${ddMax()}" step="100" placeholder="0" onkeydown="if(event.key==='Enter')ddGo()"><div><button class="gobtn" onclick="ddGo()">Play the clue ▶</button></div>`;
+    return h + '</div>';
   },
   final() {
     const order = TEAMS.map((t, i) => i).sort((a, b) => ST.scores[b] - ST.scores[a]);
@@ -367,9 +378,9 @@ const SCR = {
       <div class="podium">${order.map((i, n) => `<div style="background:${TEAMS[i].color};color:${txtColor(TEAMS[i].color)};${n ? 'opacity:.85;font-size:2.2cqw' : ''}"><span>${n + 1}. ${esc(TEAMS[i].name)}</span><span>${ST.scores[i]}</span></div>`).join('')}</div></div>`;
   }
 };
-function render() { seed = 11 + (G.c || 0) * 7 + (G.r || 0); $('board').innerHTML = SCR[G.screen](); status(); }
+function render() { seed = 11 + (G.c || 0) * 7 + (G.r || 0); $('board').innerHTML = SCR[G.screen](); status(); const w = $('wager'); if (w) setTimeout(() => w.focus(), 50); }
 function status() {
-  const where = {board: `Board · ${left()} of ${NC * NR} squares left`, clue: G.c != null ? `${cc(G.c).name} ${VAL(G.r)} · buzzers ON · Y right · N wrong · → show answer · ← back` : '', answer: '→ back to the board', final: 'Final scores'}[G.screen];
+  const where = {board: `Board · ${left()} of ${NC * NR} squares left`, clue: G.c != null ? `${cc(G.c).name} ${VAL(G.r)} · ${G.dd ? 'Daily Double, buzzers OFF' : 'buzzers ON'} · Y right · N wrong · → show answer · ← back` : '', answer: '→ back to the board', final: 'Final scores', dd: 'Daily Double · pick the team, type the bet, press Enter · ← back'}[G.screen];
   $('status').textContent = (QUIZ ? QUIZ_NAME + ' · ' : '') + where + (SP.connected() ? '' : ' · Spotify not connected (E)') + (SP.err ? ' · ⚠ ' + SP.err : '') + ' · H hides this';
 }
 
@@ -380,15 +391,25 @@ function openTile(c, r) {
   const t = tc(c, r);
   render();
   const start = () => { if (G.screen !== 'clue' || G.c !== c || G.r !== r) return; if (t.song) SP.play(t.song, toMs(t.start), Number(t.playFor) || 0).then(render); else toast('No song on this square yet. Press E to add one.', 4000); };
-  if (t.dbl) { PRESETS.fanfare.play(); setTimeout(start, 1600); } else start();
+  if (t.dbl) { G.screen = 'dd'; G.ddTeam = null; PRESETS.fanfare.play(); render(); } else start();
+}
+function ddMax() { return Math.max(ST.scores[G.ddTeam] || 0, 500); }
+function ddPick(i) { if (G.screen !== 'dd') return; G.ddTeam = i; teamSound(i); render(); }
+function ddGo() {
+  const w = $('wager'), v = Math.round(Number(w && w.value));
+  if (!w || w.value === '' || isNaN(v) || v < 0) return toast('Type the bet first (a number)');
+  if (v > ddMax()) return toast('Too high! Team ' + TEAMS[G.ddTeam].name + ' can bet up to ' + ddMax());
+  G.dd = true; G.wager = v; G.buzz = G.ddTeam; G.screen = 'clue'; render();
+  const t = tc(G.c, G.r); if (t.song) SP.play(t.song, toMs(t.start), Number(t.playFor) || 0).then(render); else toast('No song on this square yet. Press E to add one.', 4000);
 }
 function buzz(i) {
-  if (G.screen !== 'clue' || G.buzz != null || G.locked.includes(i)) return;
+  if (G.screen === 'dd' && G.ddTeam == null) return ddPick(i);
+  if (G.screen !== 'clue' || G.dd || G.buzz != null || G.locked.includes(i)) return;
   G.buzz = i; teamSound(i); if (SP.playing) SP.pause().then(render);
   const t = TEAMS[i]; $('buzz').style.background = t.color; $('buzz').style.color = txtColor(t.color);
   $('bwho').textContent = 'Team ' + t.name + '!'; $('bcd').textContent = ''; $('bnext').textContent = 'Host: Y = right · N = wrong'; $('buzz').style.display = 'flex';
 }
-function pts() { return VAL(G.r) * (tc(G.c, G.r).dbl ? 2 : 1); }
+function pts() { return G.dd ? G.wager : VAL(G.r); }
 function right() {
   if (G.buzz == null) return;
   const p = pts(); ST.scores[G.buzz] += p; G.winner = {t: G.buzz, pts: p}; G.buzz = null; $('buzz').style.display = 'none';
@@ -398,7 +419,7 @@ function wrong() {
   if (G.buzz == null) return;
   const i = G.buzz, p = pts(); ST.scores[i] -= p; saveST(); G.locked.push(i); G.buzz = null; $('buzz').style.display = 'none';
   SND.end(); toast('Team ' + TEAMS[i].name + ' −' + p);
-  if (G.locked.length >= TEAMS.length) return reveal();
+  if (G.dd || G.locked.length >= TEAMS.length) return reveal();
   resume(); render();
 }
 function resume() { if (!SP.connected() || !tc(G.c, G.r).song) return; SP.api('/me/player/play' + SP.dev('?'), {method: 'PUT'}).then(() => { SP.playing = true; render(); }).catch(() => {}); }
@@ -410,6 +431,7 @@ function toMs(s) { const m = String(s || '').trim().match(/^(\d+):(\d{1,2})$/); 
 document.addEventListener('keydown', e => {
   if ($('edit').style.display === 'block') { if (e.key === 'Escape' && !e.target.matches('input')) closeEdit(); if (B.learn !== undefined) learnKey(e); return; }
   ac();
+  if (e.target.matches && e.target.matches('input')) { if (e.key === 'Escape') toBoard(); return; }
   const k = e.key, K = k.toLowerCase();
   const t = TEAMS.findIndex(x => x.key === k);
   if (t >= 0) { e.preventDefault(); return buzz(t); }
@@ -417,12 +439,13 @@ document.addEventListener('keydown', e => {
   else if (K === 'n') wrong();
   else if (k === 'ArrowRight' || k === 'PageDown' || k === 'Enter') {
     e.preventDefault();
-    if (G.screen === 'clue') { if (G.buzz != null) { G.buzz = null; } reveal(); }
+    if (G.screen === 'dd') { if (G.ddTeam != null) ddGo(); }
+    else if (G.screen === 'clue') { if (G.buzz != null) { G.buzz = null; } reveal(); }
     else if (G.screen === 'answer') toBoard();
     else if (G.screen === 'board' && !left()) toBoard();
   }
-  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); if (G.screen === 'clue' || G.screen === 'answer' || G.screen === 'final') toBoard(); }
-  else if (k === ' ') { e.preventDefault(); if (G.buzz != null) { G.buzz = null; $('buzz').style.display = 'none'; resume(); } }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); if (G.screen !== 'board') toBoard(); }
+  else if (k === ' ') { e.preventDefault(); if (G.buzz != null && !G.dd) { G.buzz = null; $('buzz').style.display = 'none'; resume(); } }
   else if (K === 'p') SP.toggle().then(render);
   else if (K === 'w') { G = {screen: 'final'}; PRESETS.fanfare.play(); render(); }
   else if (K === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
@@ -455,10 +478,10 @@ async function drawEdit() {
     <td>Score: <input type="number" step="100" style="width:90px" value="${ST.scores[i]}" onchange="ST.scores[${i}]=Number(this.value)||0;saveST()"></td></tr>`).join('')}</table>
     <div class="muted">Team sounds and recordings are the same as in the pub quiz (record new ones there).</div>
     <div style="margin-top:8px"><button onclick="if(confirm('Start a new game? All scores go to 0 and every square opens again.')){ST={used:{},scores:TEAMS.map(()=>0)};saveST();drawEdit()}">New game (reset scores and board)</button></div>`;
-  h += `<h3>Keys during the game</h3><div class="keys muted"><span>Click a square to open it</span><span>1–5 buzzers</span><span>Y right (adds points)</span><span>N wrong (takes points, others can buzz)</span><span>→ show answer / back to board</span><span>← back to board (square stays open)</span><span>Space cancel a buzz</span><span>P pause / play music</span><span>W final scores</span><span>F full screen</span><span>E edit mode</span></div>
+  h += `<h3>Keys during the game</h3><div class="keys muted"><span>Click a square to open it</span><span>1–5 buzzers</span><span>Y right (adds points)</span><span>N wrong (takes points, others can buzz)</span><span>→ show answer / back to board</span><span>← back to board (square stays open)</span><span>Space cancel a buzz</span><span>Daily Double: click the team (or it buzzes), type the bet, Enter</span><span>P pause / play music</span><span>W final scores</span><span>F full screen</span><span>E edit mode</span></div>
     <div class="muted" style="margin-top:6px">To fix a score on the board: move the mouse over a team's score and click − or +.</div>`;
   h += `<h3>The board</h3><div class="muted" style="margin-bottom:8px">Title on the board: <input style="width:320px" value="${esc(CFG.title || DATA.title)}" onchange="CFG.title=this.value;S.set(QK('jcfg'),CFG)"></div>
-    <table><tr><th>Points</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Answer (big)</th><th>Small line under it</th><th>Double</th><th>Played</th></tr>`;
+    <table><tr><th>Points</th><th>Song</th><th>Start at</th><th>Play for (s)</th><th>Answer (big)</th><th>Small line under it</th><th>Daily Double</th><th>Played</th></tr>`;
   for (let c = 0; c < NC; c++) {
     const k = cc(c);
     h += `<tr class="sec"><td colspan="8"><span style="color:${DATA.cats[c].color}">■</span> Category: <input style="width:220px" value="${esc(k.name)}" onchange="setCfg('c${c}',{name:this.value})"> &nbsp; Task on screen: <input style="width:420px" value="${esc(k.task)}" onchange="setCfg('c${c}',{task:this.value})"></td></tr>`;
