@@ -490,10 +490,10 @@ async function findSong(c, r, q) {
   catch (e) { toast('Search failed: ' + e.message); }
 }
 async function autoFill() {
-  let n = 0;
-  for (let c = 0; c < NC; c++) for (let r = 0; r < NR; r++) { const d = DATA.cats[c].tiles[r]; if (tc(c, r).song) continue;
-    try { const it = await SP.search(d.q); if (it[0]) { setTile(c, r, {song: it[0].uri, songName: it[0].name + ' – ' + it[0].artists.map(a => a.name).join(', ')}); n++; } } catch (e) {} }
-  toast(n + ' songs added. Check them in the list below.'); drawEdit();
+  let n = 0, empty = 0, fail = 0;
+  for (let c = 0; c < NC; c++) for (let r = 0; r < NR; r++) { const d = DATA.cats[c].tiles[r]; if (tc(c, r).song) continue; empty++;
+    try { const it = await SP.search(d.q); if (it[0]) { setTile(c, r, {song: it[0].uri, songName: it[0].name + ' – ' + it[0].artists.map(a => a.name).join(', ')}); n++; } else fail++; } catch (e) { fail++; } }
+  toast(!empty ? 'All squares already have a song ✓' : fail ? n + ' songs added, ' + fail + ' not found. Find those by hand in the list below.' : n + ' songs added ✓ Check them in the list below.', 5000); drawEdit();
 }
 
 /* ---------- start ---------- */
