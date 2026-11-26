@@ -488,7 +488,8 @@ async function drawEdit() {
     for (let r = 0; r < NR; r++) {
       const t = tc(c, r), id = c + '-' + r;
       h += `<tr><td class="song">${VAL(r)}</td>
-        <td style="min-width:250px">${t.song ? `<div class="song">♪ ${esc(t.songName || t.song)}</div><button class="ghost" onclick="setTile(${c},${r},{song:'',songName:''});drawEdit()">Remove</button>` : ''}
+        <td style="min-width:250px">${t.song ? `<div class="song">♪ ${esc(t.songName || t.song)}</div><button class="ghost" onclick="setTile(${c},${r},{song:'',songName:''});drawEdit()">Remove</button>
+          <div style="margin-top:4px">${MS.c === c && MS.r === r ? `<button onclick="markStop(${c},${r})">⏹ Stop here</button> <span style="color:#FFC93C">Listening… click Stop here right before the line</span>` : `<button class="ghost" onclick="listen(${c},${r})">▶ Listen</button>${t.playFor ? ` <button class="ghost" onclick="testClip(${c},${r})">▶ Test the clip</button>` : ''}`}</div>` : ''}
           <div><input placeholder="Search Spotify or paste song link" style="width:220px" onkeydown="if(event.key==='Enter')findSong(${c},${r},this.value)"> <button class="ghost" onclick="findSong(${c},${r},this.previousElementSibling.value)">Find</button></div><div class="res" id="res-${id}"></div></td>
         <td><input style="width:60px" value="${esc(t.start)}" onchange="setTile(${c},${r},{start:this.value})"></td>
         <td><input style="width:54px" value="${esc(t.playFor)}" placeholder="all" onchange="setTile(${c},${r},{playFor:this.value})"></td>
@@ -498,12 +499,28 @@ async function drawEdit() {
         <td><input type="checkbox" ${used(c, r) ? 'checked' : ''} onchange="setUsed(${c},${r},this.checked)"></td></tr>`;
     }
   }
-  h += `</table><div class="muted" style="margin-top:6px">Finish the Line: set "Play for" to the second just before the line you want them to sing, so the music stops there by itself. "Answer" can hold the real line (you type it).</div>
+  h += `</table><div class="muted" style="margin-top:6px">Finish the Line: click ▶ Listen next to the song, then click ⏹ Stop here right before the line they should sing. The game remembers that moment by itself (you see it under "Play for"). Click ▶ Test the clip to check it. "Small line under it" can hold the real line if you want it on screen (you type it).</div>
     <div style="margin-top:14px"><button class="ghost" onclick="if(confirm('Put all songs, answers and categories back to the original?')){CFG={};S.set(QK('jcfg'),CFG);drawEdit()}">Reset board to the original</button></div>`;
   $('editIn').innerHTML = h;
   const ds = $('devSel'); if (ds) ds.onchange = () => { SP.device = ds.value; S.set('device', ds.value); };
   const v = $('vol'); if (v) v.onchange = () => { SP.volume = Math.max(5, Math.min(100, Number(v.value) || 80)); S.set('volume', SP.volume); };
 }
+const MS = {c: null, r: null};
+async function listen(c, r) {
+  if (!SP.connected()) return toast('Connect Spotify first (top of this page)');
+  const t = tc(c, r); MS.c = c; MS.r = r; drawEdit();
+  await SP.play(t.song, toMs(t.start), 0);
+}
+async function markStop(c, r) {
+  const t = tc(c, r);
+  try {
+    const st = await SP.api('/me/player');
+    const sec = Math.max(1, Math.round(((st && st.progress_ms || 0) - toMs(t.start)) / 1000 * 2 - 0.6) / 2);
+    setTile(c, r, {playFor: String(sec)}); toast('Saved ✓ The music now stops after ' + sec + ' seconds.', 4000);
+  } catch (e) { toast('Could not read the song position: ' + e.message); }
+  MS.c = MS.r = null; await SP.pause(); drawEdit();
+}
+async function testClip(c, r) { const t = tc(c, r); if (!SP.connected()) return toast('Connect Spotify first'); toast('Playing the clip… it should stop by itself after ' + t.playFor + ' s', 4000); await SP.play(t.song, toMs(t.start), Number(t.playFor) || 0); }
 async function findSong(c, r, q) {
   q = (q || '').trim(); if (!q) return;
   const m = q.match(/track[/:]([A-Za-z0-9]{22})/);
