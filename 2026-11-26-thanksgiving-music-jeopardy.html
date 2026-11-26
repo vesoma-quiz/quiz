@@ -425,7 +425,12 @@ function wrong() {
 }
 function resume() { if (!SP.connected() || !tc(G.c, G.r).song) return; SP.api('/me/player/play' + SP.dev('?'), {method: 'PUT'}).then(() => { SP.playing = true; render(); }).catch(() => {}); }
 function replay() { const t = tc(G.c, G.r); if (!t.song || !SP.connected()) return; if (!Number(t.playFor)) return resume(); SP.play(t.song, toMs(t.start), Number(t.playFor)).then(render); }
-function reveal() { ST.used[G.c + '-' + G.r] = true; saveST(); G.screen = 'answer'; $('buzz').style.display = 'none'; render(); resume(); }
+function reveal() {
+  ST.used[G.c + '-' + G.r] = true; saveST(); G.screen = 'answer'; $('buzz').style.display = 'none'; render();
+  const t = tc(G.c, G.r), pf = Number(t.playFor);
+  if (t.song && SP.connected() && pf) SP.play(t.song, toMs(t.start) + pf * 1000, 0).then(render);  // continue right where the clip stopped
+  else resume();
+}
 function toBoard() { $('buzz').style.display = 'none'; if (SP.playing) SP.pause(); G = {screen: left() ? 'board' : 'final'}; if (G.screen === 'final') PRESETS.fanfare.play(); render(); }
 function adj(i, d) { ST.scores[i] += d; saveST(); render(); }
 function toMs(s) { const m = String(s || '').trim().match(/^(\d+):(\d{1,2})$/); if (m) return (+m[1] * 60 + +m[2]) * 1000; const n = Number(s); return isNaN(n) ? 0 : n * 1000; }
