@@ -355,14 +355,15 @@ const SCR = {
   clue() {
     const k = DATA.cats[G.c], t = tc(G.c, G.r), pts = VAL(G.r);
     const dd = G.dd ? `<div class="dd">DAILY DOUBLE · Team ${esc(TEAMS[G.ddTeam].name)} bets ${G.wager}</div>` : '';
-    return confetti(16, EDGE) + header(cc(G.c).name, k.color, G.dd ? 'Daily Double' : pts + ' points') + `<div class="mid">${dd}<div class="big" style="font-size:5.4cqw">${esc(cc(G.c).task)}</div>${t.clue ? `<div class="h" style="margin-top:2cqw;font-size:${t.clue.length > 60 ? 2.6 : 3.4}cqw;line-height:1.25;color:${k.color};max-width:80cqw">“${esc(t.clue)} …”</div>` : ''}
+    return confetti(16, EDGE) + header(cc(G.c).name, k.color, G.dd ? 'Daily Double' : pts + ' points') + `<div class="mid">${dd}<div class="big" style="font-size:5.4cqw">${esc(cc(G.c).task)}</div>
       <div class="eq ${SP.playing ? '' : 'off'}">${[0, .3, .15, .45, .05, .35, .2].map((d, i) => `<i style="background:${PARTY[i]};animation-delay:-${d}s"></i>`).join('')}</div>
       <div class="sub" style="margin-top:0">${G.dd ? 'Only Team ' + esc(TEAMS[G.ddTeam].name) + ' answers this one!' : G.locked.length ? 'Out this round: ' + G.locked.map(i => TEAMS[i].name).join(', ') : 'Buzz in when you know it!'}</div></div>`;
   },
   answer() {
     const k = DATA.cats[G.c], t = tc(G.c, G.r);
     return confetti(40, WIDE) + header(cc(G.c).name, k.color, G.dd ? 'Daily Double' : VAL(G.r) + ' points') + `<div class="mid"><div class="kicker" style="color:${C.dust};font-size:2.4cqw">THE ANSWER</div>
-      <div class="big" style="color:${k.color};font-size:${String(t.ans).length > 26 ? 5 : 7}cqw">${esc(t.ans || '(type the answer in edit mode)')}</div>${t.sub ? `<div class="sub" style="color:${C.chalk};font-size:2.8cqw">${esc(t.sub)}</div>` : ''}${t.note ? `<div class="sub">${esc(t.note)}</div>` : ''}
+      ${t.clue ? `<div class="big" style="color:${k.color};font-size:${t.clue.length > 60 ? 4 : t.clue.length > 30 ? 5 : 6.5}cqw;line-height:1.15">“${esc(t.clue)}”</div><div class="sub" style="color:${C.chalk};font-size:2.6cqw">${esc(t.ans)}${t.sub ? ' – ' + esc(t.sub) : ''}</div>`
+      : `<div class="big" style="color:${k.color};font-size:${String(t.ans).length > 26 ? 5 : 7}cqw">${esc(t.ans || '(type the answer in edit mode)')}</div>${t.sub ? `<div class="sub" style="color:${C.chalk};font-size:2.8cqw">${esc(t.sub)}</div>` : ''}${t.note ? `<div class="sub">${esc(t.note)}</div>` : ''}`}
       ${G.winner ? `<div class="chip" style="background:${TEAMS[G.winner.t].color};color:${txtColor(TEAMS[G.winner.t].color)}">+${G.winner.pts} · Team ${esc(TEAMS[G.winner.t].name)}</div>` : ''}</div><div class="hint">→ back to the board</div>`;
   },
   dd() {
@@ -497,10 +498,10 @@ async function drawEdit() {
         <td><input style="width:200px" value="${esc(t.sub)}" onchange="setTile(${c},${r},{sub:this.value})"></td>
         <td><input type="checkbox" ${t.dbl ? 'checked' : ''} onchange="setTile(${c},${r},{dbl:this.checked})"></td>
         <td><input type="checkbox" ${used(c, r) ? 'checked' : ''} onchange="setUsed(${c},${r},this.checked)"></td></tr>
-        <tr><td></td><td colspan="7" style="padding-top:0">Text on screen while the song plays: <input style="width:640px" placeholder="optional – e.g. the last line they hear before the music stops" value="${esc(t.clue || '')}" onchange="setTile(${c},${r},{clue:this.value})"></td></tr>`;
+        <tr><td></td><td colspan="7" style="padding-top:0">The right line (shows big on the answer slide, after Y or →): <input style="width:560px" placeholder="optional – type the line they have to sing" value="${esc(t.clue || '')}" onchange="setTile(${c},${r},{clue:this.value})"></td></tr>`;
     }
   }
-  h += `</table><div class="muted" style="margin-top:6px">"Text on screen while the song plays" shows under the task during the clip (you type it). Finish the Line: click ▶ Listen next to the song, then click ⏹ Stop here right before the line they should sing. The game remembers that moment by itself (you see it under "Play for"). Click ▶ Test the clip to check it. "Small line under it" can hold the real line if you want it on screen (you type it).</div>
+  h += `</table><div class="muted" style="margin-top:6px">"The right line" stays hidden while the song plays and shows big on the answer slide, with the song name under it. Finish the Line: click ▶ Listen next to the song, then click ⏹ Stop here right before the line they should sing. The game remembers that moment by itself (you see it under "Play for"). Click ▶ Test the clip to check it. "Small line under it" can hold the real line if you want it on screen (you type it).</div>
     <div style="margin-top:14px"><button class="ghost" onclick="if(confirm('Put all songs, answers and categories back to the original?')){CFG={};S.set(QK('jcfg'),CFG);drawEdit()}">Reset board to the original</button></div>`;
   $('editIn').innerHTML = h;
   const ds = $('devSel'); if (ds) ds.onchange = () => { SP.device = ds.value; S.set('device', ds.value); };
